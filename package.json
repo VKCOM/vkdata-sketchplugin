@@ -1,0 +1,37 @@
+{
+  "name": "VK-Data",
+  "version": "1.0.4",
+  "engines": {
+    "sketch": ">=3.0"
+  },
+  "skpm": {
+    "name": "VK-Data",
+    "manifest": "src/manifest.json",
+    "main": "vkdata.sketchplugin",
+    "assets": [
+      "assets/**/*"
+    ]
+  },
+  "scripts": {
+    "build": "skpm-build",
+    "watch": "skpm-build --watch",
+    "start": "skpm-build --watch --run",
+    "postinstall": "npm run build && skpm-link"
+  },
+  "devDependencies": {
+    "@skpm/builder": "^0.5.2"
+  },
+  "resources": [
+    "resources/**/*.js"
+  ],
+  "dependencies": {
+    "@skpm/extract-loader": "^2.0.2",
+    "@skpm/fs": "^0.2.2",
+    "css-loader": "^1.0.1",
+    "html-loader": "^0.5.5",
+    "mocha-js-delegate": "^0.1.1",
+    "skpm": "^1.1.10"
+  },
+  "licence": "MIT",
+  "repository": "https://github.com/VKCOM/vkdata-sketchplugin.git"
+}

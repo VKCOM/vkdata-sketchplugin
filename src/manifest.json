@@ -1,0 +1,47 @@
+{
+  "name": "💾 VK Data",
+  "author": "VK Design Team",
+  "authorEmail": "design@vk.com",
+  "description":
+    "Plugin for work with the data of your page at vk.com",
+  "compatibleVersion": 49,
+  "bundleVersion": 1,
+  "icon": "./icon.png",
+  "suppliesData" : true,
+  "commands": [
+    {
+      "name": "Health Check",
+      "identifier": "healthcheck",
+      "script": "./common.js"
+    },
+    {
+      "name": "Logout",
+      "identifier": "logout",
+      "script": "./common.js",
+      "handler": "logout"
+    },
+    {
+      "script" : "./common.js",
+      "handlers" : {
+        "actions" : {
+          "Startup": "onStartup",
+          "Shutdown": "onShutdown",
+          "MyPhoto": "onMyPhoto",
+          "PhotoByUserID": "onPhotoByUserID",
+          "MyFriends": "onMyFriends",
+          "MyGroups": "onMyGroups",
+          "MyFriendsFirstNames": "onMyFriendsFirstNames",
+          "MyFriendsFullNames": "onMyFriendsFullNames",
+          "MyGroupsNames": "onMyGroupsNames",
+          "MyName": "onMyName",
+          "VideoTitleByOwnerID": "onVideoTitleByOwnerID",
+          "VideoByOwnerID": "onVideoByOwnerID",
+          "VideoViewsByOwnerID": "onVideoViewsByOwnerID"
+        }
+      }
+    }
+  ],
+  "menu": {
+    "items": ["healthcheck", "logout"]
+  }
+}
