@@ -8,6 +8,6 @@ The plugin comes bundled with Sketch 52, but if for some reason you’ve lost it
 
 Get Avatars, names and video thumbnails from your account at vk.com, using Sketch 52’s new Data Supplier feature.
 
-You can use it from the toolbar Data icon…
+You can use it from the toolbar Data icon, from the contextual menu for any layer, or even for Overrides using the Inspector.
 
 ![Using the VK Data Plugin from the toolbar icon](docs/screen.png)
