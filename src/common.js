@@ -108,7 +108,6 @@ export function onStartup() {
 
   getData('stats.trackVisitor', {
   	'access_token': ACCESS_TOKEN,
-  	'app_id': APP_ID,
   	'v': API_VERSION
   })
 }
@@ -125,7 +124,7 @@ export function onShutdown() {
 export function onMyPhoto(context) {
   getData('users.get', {
       'user_ids': USER_ID,
-      'fields': 'photo_200',
+      'fields': 'photo_200,photo_100',
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
     })
@@ -142,7 +141,12 @@ export function onMyPhoto(context) {
         } else {
           layer = item
         }
-        process(response[index].photo_200, dataKey, index, item)
+
+        if(response[index].photo_200 == undefined) {
+            process(response[index].photo_100, dataKey, index, item)
+        } else {
+            process(response[index].photo_200, dataKey, index, item)
+        }
       })
     })
     .catch(error => {
@@ -156,7 +160,7 @@ export function onPhotoByUserID(context) {
   if (owner_id != 'null') {
     getData('users.get', {
         'user_ids': owner_id,
-        'fields': 'photo_200',
+        'fields': 'photo_200,photo_100',
         'access_token': ACCESS_TOKEN,
         'v': API_VERSION
       })
@@ -173,7 +177,12 @@ export function onPhotoByUserID(context) {
           } else {
             layer = item
           }
-          process(response[index].photo_200, dataKey, index, item)
+
+          if(response[index].photo_200 == undefined) {
+            process(response[index].photo_100, dataKey, index, item)
+          } else {
+            process(response[index].photo_200, dataKey, index, item)
+          }
         })
       })
       .catch(error => {
@@ -187,7 +196,7 @@ export function onMyFriends(context) {
   getData('friends.get', {
       'user_id': USER_ID,
       'order': 'hints',
-      'fields': 'photo_200',
+      'fields': 'photo_200,photo_100',
       'access_token': ACCESS_TOKEN,
       'count': 25,
       'v': API_VERSION
@@ -205,7 +214,12 @@ export function onMyFriends(context) {
         } else {
           layer = item
         }
-        process(response['items'][index].photo_200, dataKey, index, item)
+
+        if(response['items'][index].photo_200 == undefined) {
+            process(response['items'][index].photo_100, dataKey, index, item)
+        } else {
+            process(response['items'][index].photo_200, dataKey, index, item)
+        }
       })
     })
     .catch(error => {
@@ -235,7 +249,12 @@ export function onMyGroups(context) {
         } else {
           layer = item
         }
-        process(response['items'][index].photo_200, dataKey, index, item)
+
+        if(response['items'][index].photo_200 == undefined) {
+            process(response['items'][index].photo_100, dataKey, index, item)
+        } else {
+            process(response['items'][index].photo_200, dataKey, index, item)
+        }
       })
     })
     .catch(error => {
@@ -396,7 +415,18 @@ export function onVideoByOwnerID(context) {
           } else {
             layer = item
           }
-          process(response['items'][index].photo_800, dataKey, index, item)
+
+          if(response['items'][index].photo_1280 !== undefined) {
+            process(response['items'][index].photo_1280, dataKey, index, item)
+          } else if(response['items'][index].photo_800 !== undefined) {
+            process(response['items'][index].photo_800, dataKey, index, item)
+          } else if(response['items'][index].photo_640 !== undefined) {
+            process(response['items'][index].photo_640, dataKey, index, item)
+          } else if(response['items'][index].photo_320 !== undefined) {
+            process(response['items'][index].photo_320, dataKey, index, item)
+          } else {
+            process(response['items'][index].photo_130, dataKey, index, item)
+          }
         })
       })
       .catch(error => {
