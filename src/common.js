@@ -95,6 +95,7 @@ export function onStartup() {
   DataSupplier.registerDataSupplier('public.image', 'Your Avatar', 'MyPhoto')
   DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
+  DataSupplier.registerDataSupplier('public.image', 'Friends: Random', 'MyFriendsRandom')
   DataSupplier.registerDataSupplier('public.image', 'Groups', 'MyGroups')
   DataSupplier.registerDataSupplier('public.image', 'Video by..', 'VideoByOwnerID')
 
@@ -503,6 +504,45 @@ export function onVideoViewsByOwnerID(context) {
   }
 }
 
+export function onMyFriendsRandom(context) {
+  getData('friends.get', {
+      'user_id': USER_ID,
+      'order': 'random',
+      'fields': 'photo_200,photo_100',
+      'access_token': ACCESS_TOKEN,
+      'count': 25,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        let layer
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+
+        //let arr = response['items'].map(item => item.id)
+        //log(arr)
+
+        if(response['items'][index].photo_200 == undefined) {
+            process(response['items'][index].photo_100, dataKey, index, item)
+        } else {
+            process(response['items'][index].photo_200, dataKey, index, item)
+        }
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+    })
+}
+
 function getData(method, options) {
   if (Settings.settingForKey('ACCESS_TOKEN') == undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV == true) {
     auth()
@@ -514,7 +554,6 @@ function getData(method, options) {
         .join('&')
 
       let url = API_URI + method + '?' + query
-      //console.log(url)
       fetch(url)
         .then(response => response.json())
         .then(json => resolve(json.response))

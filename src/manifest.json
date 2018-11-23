@@ -29,6 +29,7 @@
           "MyPhoto": "onMyPhoto",
           "PhotoByUserID": "onPhotoByUserID",
           "MyFriends": "onMyFriends",
+          "MyFriendsRandom": "onMyFriendsRandom",
           "MyGroups": "onMyGroups",
           "MyFriendsFirstNames": "onMyFriendsFirstNames",
           "MyFriendsFullNames": "onMyFriendsFullNames",
