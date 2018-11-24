@@ -109,8 +109,8 @@ export function onStartup() {
   DataSupplier.registerDataSupplier('public.text', 'Video Views by..', 'VideoViewsByOwnerID')
 
   getData('stats.trackVisitor', {
-  	'access_token': ACCESS_TOKEN,
-  	'v': API_VERSION
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
   })
 }
 
@@ -125,43 +125,7 @@ export function onShutdown() {
 
 export function onMyPhoto(context) {
   getData('users.get', {
-    'user_ids': USER_ID,
-    'fields': 'photo_200,photo_100',
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    const items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-
-      if(response[index].photo_200 == undefined) {
-        process(response[index].photo_100, dataKey, index, item)
-      } else {
-        process(response[index].photo_200, dataKey, index, item)
-      }
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onPhotoByUserID(context) {
-  let owner_id = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
-    getData('users.get', {
-      'user_ids': owner_id,
+      'user_ids': USER_ID,
       'fields': 'photo_200,photo_100',
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
@@ -180,7 +144,7 @@ export function onPhotoByUserID(context) {
           layer = item
         }
 
-        if(response[index].photo_200 == undefined) {
+        if (response[index].photo_200 == undefined) {
           process(response[index].photo_100, dataKey, index, item)
         } else {
           process(response[index].photo_200, dataKey, index, item)
@@ -191,335 +155,50 @@ export function onPhotoByUserID(context) {
       UI.message('Something went wrong')
       console.error(error)
     })
+}
+
+export function onPhotoByUserID(context) {
+  let owner_id = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
+  if (owner_id != 'null') {
+    getData('users.get', {
+        'user_ids': owner_id,
+        'fields': 'photo_200,photo_100',
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          if (response[index].photo_200 == undefined) {
+            process(response[index].photo_100, dataKey, index, item)
+          } else {
+            process(response[index].photo_200, dataKey, index, item)
+          }
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
   }
 }
 
 export function onMyFriends(context) {
   let selection = context.data.items.length
   getData('friends.get', {
-    'user_id': USER_ID,
-    'order': 'hints',
-    'fields': 'photo_200,photo_100',
-    'access_token': ACCESS_TOKEN,
-    'count': selection,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    const items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-
-      if(response['items'][index].photo_200 == undefined) {
-        process(response['items'][index].photo_100, dataKey, index, item)
-      } else {
-        process(response['items'][index].photo_200, dataKey, index, item)
-      }
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onMyGroups(context) {
-  let selection = context.data.items.length
-  getData('groups.get', {
-    'user_id': USER_ID,
-    'access_token': ACCESS_TOKEN,
-    'count': selection,
-    'extended': 1,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    const items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-
-      if(response['items'][index].photo_200 == undefined) {
-        process(response['items'][index].photo_100, dataKey, index, item)
-      } else {
-        process(response['items'][index].photo_200, dataKey, index, item)
-      }
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onMyFriendsFirstNames(context) {
-  let selection = context.data.items.length
-  getData('friends.get', {
-    'user_id': USER_ID,
-    'order': 'hints',
-    'fields': 'first_name',
-    'access_token': ACCESS_TOKEN,
-    'count': selection,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    const items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-      DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onMyFriendsFullNames(context) {
-  let selection = context.data.items.length
-  getData('friends.get', {
-    'user_id': USER_ID,
-    'order': 'hints',
-    'fields': 'first_name',
-    'access_token': ACCESS_TOKEN,
-    'count': selection,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    const items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-      let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
-      DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onMyName(context) {
-  getData('users.get', {
-    'user_ids': USER_ID,
-    'fields': 'first_name,last_name',
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    let items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-
-      let full_name = response[index].first_name + ' ' + response[index].last_name
-      DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
-    })
-  })
-  .catch(function(error) {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onMyGroupsNames(context) {
-  let selection = context.data.items.length
-  getData('groups.get', {
-    'user_id': USER_ID,
-    'access_token': ACCESS_TOKEN,
-    'count': selection,
-    'extended': 1,
-    'v': API_VERSION
-  })
-  .then(response => {
-    let dataKey = context.data.key
-    let items = util.toArray(context.data.items).map(sketch.fromNative)
-    items.forEach((item, index) => {
-      let layer
-
-      if (!item.type) {
-        item = sketch.Shape.fromNative(item.sketchObject)
-      }
-
-      if (item.type === 'DataOverride') {
-        layer = item.symbolInstance
-      } else {
-        layer = item
-      }
-
-      let name = response['items'][index].name
-      DataSupplier.supplyDataAtIndex(dataKey, name, index)
-    })
-  })
-  .catch(error => {
-    UI.message('Something went wrong')
-    console.error(error)
-  })
-}
-
-export function onVideoByOwnerID(context) {
-  let selection = context.data.items.length
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
-    getData('video.get', {
-      'owner_id': owner_id,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-    .then(response => {
-      let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        let layer
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
-        }
-
-        if(response['items'][index].photo_1280 !== undefined) {
-          process(response['items'][index].photo_1280, dataKey, index, item)
-        } else if(response['items'][index].photo_800 !== undefined) {
-          process(response['items'][index].photo_800, dataKey, index, item)
-        } else if(response['items'][index].photo_640 !== undefined) {
-          process(response['items'][index].photo_640, dataKey, index, item)
-        } else if(response['items'][index].photo_320 !== undefined) {
-          process(response['items'][index].photo_320, dataKey, index, item)
-        } else {
-          process(response['items'][index].photo_130, dataKey, index, item)
-        }
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-    })
-  }
-}
-
-export function onVideoTitleByOwnerID(context) {
-  let selection = context.data.items.length
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
-    getData('video.get', {
-      'owner_id': owner_id,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-    .then(response => {
-      let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        let layer
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
-        }
-        let name = response['items'][index].title
-        DataSupplier.supplyDataAtIndex(dataKey, name, index)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-    })
-  }
-}
-
-export function onVideoViewsByOwnerID(context) {
-  let selection = context.data.items.length
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
-    getData('video.get', {
-      'owner_id': owner_id,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-    .then(response => {
-      let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        let layer
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
-        }
-        let views = response['items'][index].views
-        views = views + ' просмотров'
-        DataSupplier.supplyDataAtIndex(dataKey, views, index)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-    })
-  }
-}
-
-export function onMyFriendsRandom(context) {
-  let selection = context.data.items.length
-
-  if(Settings.settingForKey('RandomID') == undefined) {
-    getData('friends.get', {
       'user_id': USER_ID,
-      'order': 'random',
+      'order': 'hints',
       'fields': 'photo_200,photo_100',
       'access_token': ACCESS_TOKEN,
       'count': selection,
@@ -528,13 +207,6 @@ export function onMyFriendsRandom(context) {
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-      let arr = []
-      for(let i = 0; i<selection; i++) {
-        arr.splice(i, 0, String(response['items'][i].id))
-      }
-      Settings.setSettingForKey('RandomID', arr)
-
       items.forEach((item, index) => {
         let layer
         if (!item.type) {
@@ -546,7 +218,7 @@ export function onMyFriendsRandom(context) {
           layer = item
         }
 
-        if(response['items'][index].photo_200 == undefined) {
+        if (response['items'][index].photo_200 == undefined) {
           process(response['items'][index].photo_100, dataKey, index, item)
         } else {
           process(response['items'][index].photo_200, dataKey, index, item)
@@ -557,12 +229,15 @@ export function onMyFriendsRandom(context) {
       UI.message('Something went wrong')
       console.error(error)
     })
-  } else {
-    let userids = Settings.settingForKey('RandomID').join(',')
-    getData('users.get', {
-      'user_ids': userids,
-      'fields': 'photo_200,photo_100',
+}
+
+export function onMyGroups(context) {
+  let selection = context.data.items.length
+  getData('groups.get', {
+      'user_id': USER_ID,
       'access_token': ACCESS_TOKEN,
+      'count': selection,
+      'extended': 1,
       'v': API_VERSION
     })
     .then(response => {
@@ -579,29 +254,25 @@ export function onMyFriendsRandom(context) {
           layer = item
         }
 
-        if(response[index].photo_200 == undefined) {
-          process(response[index].photo_100, dataKey, index, item)
+        if (response['items'][index].photo_200 == undefined) {
+          process(response['items'][index].photo_100, dataKey, index, item)
         } else {
-          process(response[index].photo_200, dataKey, index, item)
+          process(response['items'][index].photo_200, dataKey, index, item)
         }
       })
-      Settings.setSettingForKey('RandomID', undefined)
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
     })
-  }
 }
 
-export function onMyFriendsNamesRandom(context) {
+export function onMyFriendsFirstNames(context) {
   let selection = context.data.items.length
-
-  if(Settings.settingForKey('RandomID') == undefined) {
-    getData('friends.get', {
+  getData('friends.get', {
       'user_id': USER_ID,
-      'order': 'random',
-      'fields': 'first_name,last_name',
+      'order': 'hints',
+      'fields': 'first_name',
       'access_token': ACCESS_TOKEN,
       'count': selection,
       'v': API_VERSION
@@ -609,13 +280,6 @@ export function onMyFriendsNamesRandom(context) {
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-      let arr = []
-      for(let i = 0; i<selection; i++) {
-        arr.splice(i, 0, String(response['items'][i].id))
-      }
-      Settings.setSettingForKey('RandomID', arr)
-
       items.forEach((item, index) => {
         let layer
         if (!item.type) {
@@ -626,7 +290,6 @@ export function onMyFriendsNamesRandom(context) {
         } else {
           layer = item
         }
-
         DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
       })
     })
@@ -634,12 +297,16 @@ export function onMyFriendsNamesRandom(context) {
       UI.message('Something went wrong')
       console.error(error)
     })
-  } else {
-    let userids = Settings.settingForKey('RandomID').join(',')
-    getData('users.get', {
-      'user_ids': userids,
-      'fields': 'first_name,last_name',
+}
+
+export function onMyFriendsFullNames(context) {
+  let selection = context.data.items.length
+  getData('friends.get', {
+      'user_id': USER_ID,
+      'order': 'hints',
+      'fields': 'first_name',
       'access_token': ACCESS_TOKEN,
+      'count': selection,
       'v': API_VERSION
     })
     .then(response => {
@@ -655,15 +322,348 @@ export function onMyFriendsNamesRandom(context) {
         } else {
           layer = item
         }
-        let full_name = response[index].first_name + ' ' + response[index].last_name
+        let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
       })
-      Settings.setSettingForKey('RandomID', undefined)
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
     })
+}
+
+export function onMyName(context) {
+  getData('users.get', {
+      'user_ids': USER_ID,
+      'fields': 'first_name,last_name',
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        let layer
+
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+
+        let full_name = response[index].first_name + ' ' + response[index].last_name
+        DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+      })
+    })
+    .catch(function(error) {
+      UI.message('Something went wrong')
+      console.error(error)
+    })
+}
+
+export function onMyGroupsNames(context) {
+  let selection = context.data.items.length
+  getData('groups.get', {
+      'user_id': USER_ID,
+      'access_token': ACCESS_TOKEN,
+      'count': selection,
+      'extended': 1,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        let layer
+
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+
+        let name = response['items'][index].name
+        DataSupplier.supplyDataAtIndex(dataKey, name, index)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+    })
+}
+
+export function onVideoByOwnerID(context) {
+  let selection = context.data.items.length
+  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (owner_id != 'null') {
+    getData('video.get', {
+        'owner_id': owner_id,
+        'count': selection,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          if (response['items'][index].photo_1280 !== undefined) {
+            process(response['items'][index].photo_1280, dataKey, index, item)
+          } else if (response['items'][index].photo_800 !== undefined) {
+            process(response['items'][index].photo_800, dataKey, index, item)
+          } else if (response['items'][index].photo_640 !== undefined) {
+            process(response['items'][index].photo_640, dataKey, index, item)
+          } else if (response['items'][index].photo_320 !== undefined) {
+            process(response['items'][index].photo_320, dataKey, index, item)
+          } else {
+            process(response['items'][index].photo_130, dataKey, index, item)
+          }
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  }
+}
+
+export function onVideoTitleByOwnerID(context) {
+  let selection = context.data.items.length
+  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (owner_id != 'null') {
+    getData('video.get', {
+        'owner_id': owner_id,
+        'count': selection,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+          let name = response['items'][index].title
+          DataSupplier.supplyDataAtIndex(dataKey, name, index)
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  }
+}
+
+export function onVideoViewsByOwnerID(context) {
+  let selection = context.data.items.length
+  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (owner_id != 'null') {
+    getData('video.get', {
+        'owner_id': owner_id,
+        'count': selection,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+          let views = response['items'][index].views
+          views = views + ' просмотров'
+          DataSupplier.supplyDataAtIndex(dataKey, views, index)
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  }
+}
+
+export function onMyFriendsRandom(context) {
+  let selection = context.data.items.length
+
+  if (Settings.settingForKey('RandomID') == undefined) {
+    getData('friends.get', {
+        'user_id': USER_ID,
+        'order': 'random',
+        'fields': 'photo_200,photo_100',
+        'access_token': ACCESS_TOKEN,
+        'count': selection,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+        let arr = []
+        for (let i = 0; i < selection; i++) {
+          arr.splice(i, 0, String(response['items'][i].id))
+        }
+        Settings.setSettingForKey('RandomID', arr)
+
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          if (response['items'][index].photo_200 == undefined) {
+            process(response['items'][index].photo_100, dataKey, index, item)
+          } else {
+            process(response['items'][index].photo_200, dataKey, index, item)
+          }
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  } else {
+    let userids = Settings.settingForKey('RandomID').join(',')
+    getData('users.get', {
+        'user_ids': userids,
+        'fields': 'photo_200,photo_100',
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          if (response[index].photo_200 == undefined) {
+            process(response[index].photo_100, dataKey, index, item)
+          } else {
+            process(response[index].photo_200, dataKey, index, item)
+          }
+        })
+        Settings.setSettingForKey('RandomID', undefined)
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  }
+}
+
+export function onMyFriendsNamesRandom(context) {
+  let selection = context.data.items.length
+
+  if (Settings.settingForKey('RandomID') == undefined) {
+    getData('friends.get', {
+        'user_id': USER_ID,
+        'order': 'random',
+        'fields': 'first_name,last_name',
+        'access_token': ACCESS_TOKEN,
+        'count': selection,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+        let arr = []
+        for (let i = 0; i < selection; i++) {
+          arr.splice(i, 0, String(response['items'][i].id))
+        }
+        Settings.setSettingForKey('RandomID', arr)
+
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
+        })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
+  } else {
+    let userids = Settings.settingForKey('RandomID').join(',')
+    getData('users.get', {
+        'user_ids': userids,
+        'fields': 'first_name,last_name',
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+          let full_name = response[index].first_name + ' ' + response[index].last_name
+          DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+        })
+        Settings.setSettingForKey('RandomID', undefined)
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+      })
   }
 }
 
@@ -674,14 +674,14 @@ function getData(method, options) {
     return new Promise(function(resolve, reject) {
       let esc = encodeURIComponent
       let query = Object.keys(options)
-      .map(key => esc(key) + '=' + esc(options[key]))
-      .join('&')
+        .map(key => esc(key) + '=' + esc(options[key]))
+        .join('&')
 
       let url = API_URI + method + '?' + query
       fetch(url)
-      .then(response => response.json())
-      .then(json => resolve(json.response))
-      .catch(error => resolve(error))
+        .then(response => response.json())
+        .then(json => resolve(json.response))
+        .catch(error => resolve(error))
     })
   }
 }
@@ -693,31 +693,31 @@ function process(data, dataKey, index, item) {
     }
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
 
-      if (item.type != 'DataOverride') {
-        Settings.setLayerSettingForKey(item, SETTING_KEY, data.id)
-      }
+    if (item.type != 'DataOverride') {
+      Settings.setLayerSettingForKey(item, SETTING_KEY, data.id)
+    }
 
-      let downloadLocation = data
-      return fetch(downloadLocation)
+    let downloadLocation = data
+    return fetch(downloadLocation)
   })
 }
 
 function getImageFromURL(url) {
   return fetch(url)
-  .then(res => res.blob())
+    .then(res => res.blob())
     .then(saveTempFileFromImageData)
     .catch((err) => {
       console.error(err)
-        return context.plugin.urlForResourceNamed('placeholder.png').path()
-      })
-      }
+      return context.plugin.urlForResourceNamed('placeholder.png').path()
+    })
+}
 
-      function saveTempFileFromImageData(imageData) {
-        const guid = NSProcessInfo.processInfo().globallyUniqueString()
-        const imagePath = path.join(FOLDER, `${guid}.jpg`)
-        try {
-          fs.mkdirSync(FOLDER)
-        } catch (err) {
+function saveTempFileFromImageData(imageData) {
+  const guid = NSProcessInfo.processInfo().globallyUniqueString()
+  const imagePath = path.join(FOLDER, `${guid}.jpg`)
+  try {
+    fs.mkdirSync(FOLDER)
+  } catch (err) {
     // probably because the folder already exists
   }
   try {
