@@ -37,7 +37,8 @@
           "MyName": "onMyName",
           "VideoTitleByOwnerID": "onVideoTitleByOwnerID",
           "VideoByOwnerID": "onVideoByOwnerID",
-          "VideoViewsByOwnerID": "onVideoViewsByOwnerID"
+          "VideoViewsByOwnerID": "onVideoViewsByOwnerID",
+          "MyFriendsNamesRandom": "onMyFriendsNamesRandom"
         }
       }
     }
