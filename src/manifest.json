@@ -2,16 +2,16 @@
   "name": "💾 VK Data",
   "author": "VK Design Team",
   "authorEmail": "design@vk.com",
-  "description":
-    "Plugin for work with the data of your page at vk.com",
+  "description": "Plugin for work with the data of your page at vk.com",
+  "homepage": "https://github.com/VKCOM/vkdata-sketchplugin",
   "compatibleVersion": 49,
   "bundleVersion": 1,
   "icon": "./icon.png",
   "suppliesData" : true,
   "commands": [
     {
-      "name": "Health Check",
-      "identifier": "healthcheck",
+      "name": "Auth Check",
+      "identifier": "authcheck",
       "script": "./common.js"
     },
     {
@@ -44,6 +44,10 @@
     }
   ],
   "menu": {
-    "items": ["healthcheck", "logout"]
+    "items": [
+      "authcheck",
+      "-",
+      "logout"
+    ]
   }
 }

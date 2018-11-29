@@ -551,6 +551,7 @@ export function onMyFriendsRandom(context) {
           } else {
             process(response['items'][index].photo_200, dataKey, index, item)
           }
+          UI.message('Now you can add names in Friends: Random')
         })
       })
       .catch(error => {
@@ -627,7 +628,9 @@ export function onMyFriendsNamesRandom(context) {
             layer = item
           }
 
-          DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
+          let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
+          DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+          UI.message('Now you can add avatars in Friends: Random')
         })
       })
       .catch(error => {
