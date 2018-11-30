@@ -25,7 +25,7 @@ const USER_ID = Settings.settingForKey('USER_ID')
 
 const isDEV = false
 
-export default function() {
+export function checkauth() {
   if (Settings.settingForKey('ACCESS_TOKEN') == undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV == true) {
     auth()
   } else {

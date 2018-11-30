@@ -12,7 +12,8 @@
     {
       "name": "Auth Check",
       "identifier": "authcheck",
-      "script": "./common.js"
+      "script": "./common.js",
+      "handler": "checkauth"
     },
     {
       "name": "Logout",
