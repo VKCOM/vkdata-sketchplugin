@@ -152,7 +152,7 @@ export function onMyPhoto(context) {
           process(response[index].photo_200, dataKey, index, item)
         }
 
-        sendEvent(context, 'Avatar', 'My Avatar')
+        sendEvent(context, 'User', 'My Avatar')
       })
     })
     .catch(error => {
@@ -191,7 +191,7 @@ export function onPhotoByUserID(context) {
             process(response[index].photo_200, dataKey, index, item)
           }
 
-          sendEvent(context, 'Avatar', 'By User ID')
+          sendEvent(context, 'Friends', 'By User ID')
         })
       })
       .catch(error => {
@@ -378,7 +378,7 @@ export function onMyName(context) {
         let full_name = response[index].first_name + ' ' + response[index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
 
-        sendEvent(context, 'Names', 'My Names')
+        sendEvent(context, 'User', 'Names')
       })
     })
     .catch(function(error) {
