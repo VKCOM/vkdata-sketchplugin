@@ -4,6 +4,7 @@ const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
 const MochaJSDelegate = require('mocha-js-delegate')
+const { sendEvent, sendError } = require('./analytics.js')
 
 const {
   DataSupplier,
@@ -90,7 +91,7 @@ export function logout() {
   auth()
 }
 
-export function onStartup() {
+export function onStartup(context) {
   //image
   DataSupplier.registerDataSupplier('public.image', 'Your Avatar', 'MyPhoto')
   DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
@@ -112,6 +113,7 @@ export function onStartup() {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
+  sendEvent(context, 'Launch Sketch', 'Hooray')
 }
 
 export function onShutdown() {
@@ -149,11 +151,14 @@ export function onMyPhoto(context) {
         } else {
           process(response[index].photo_200, dataKey, index, item)
         }
+
+        sendEvent(context, 'Avatar', 'My Avatar')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -185,11 +190,14 @@ export function onPhotoByUserID(context) {
           } else {
             process(response[index].photo_200, dataKey, index, item)
           }
+
+          sendEvent(context, 'Avatar', 'By User ID')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }
@@ -223,11 +231,14 @@ export function onMyFriends(context) {
         } else {
           process(response['items'][index].photo_200, dataKey, index, item)
         }
+
+        sendEvent(context, 'Friends', 'Hints')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -259,11 +270,14 @@ export function onMyGroups(context) {
         } else {
           process(response['items'][index].photo_200, dataKey, index, item)
         }
+
+        sendEvent(context, 'Groups', 'Avatar')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -291,11 +305,14 @@ export function onMyFriendsFirstNames(context) {
           layer = item
         }
         DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
+
+        sendEvent(context, 'Friends', 'First Names')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -324,11 +341,14 @@ export function onMyFriendsFullNames(context) {
         }
         let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+
+        sendEvent(context, 'Friends', 'Full Names')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -357,11 +377,14 @@ export function onMyName(context) {
 
         let full_name = response[index].first_name + ' ' + response[index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+
+        sendEvent(context, 'Names', 'My Names')
       })
     })
     .catch(function(error) {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -392,11 +415,14 @@ export function onMyGroupsNames(context) {
 
         let name = response['items'][index].name
         DataSupplier.supplyDataAtIndex(dataKey, name, index)
+
+        sendEvent(context, 'Groups', 'Names')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
+      sendError(context, error)
     })
 }
 
@@ -435,11 +461,14 @@ export function onVideoByOwnerID(context) {
           } else {
             process(response['items'][index].photo_130, dataKey, index, item)
           }
+
+          sendEvent(context, 'Video', 'Thumbnails')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }
@@ -469,11 +498,14 @@ export function onVideoTitleByOwnerID(context) {
           }
           let name = response['items'][index].title
           DataSupplier.supplyDataAtIndex(dataKey, name, index)
+
+          sendEvent(context, 'Video', 'Title')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }
@@ -504,11 +536,14 @@ export function onVideoViewsByOwnerID(context) {
           let views = response['items'][index].views
           views = views + ' просмотров'
           DataSupplier.supplyDataAtIndex(dataKey, views, index)
+
+          sendEvent(context, 'Video', 'Views')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }
@@ -552,11 +587,14 @@ export function onMyFriendsRandom(context) {
             process(response['items'][index].photo_200, dataKey, index, item)
           }
           UI.message('Now you can add names in Friends: Random')
+
+          sendEvent(context, 'Friends', 'Random')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
@@ -585,12 +623,15 @@ export function onMyFriendsRandom(context) {
           } else {
             process(response[index].photo_200, dataKey, index, item)
           }
+
+          sendEvent(context, 'Friends', 'Random')
         })
         Settings.setSettingForKey('RandomID', undefined)
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }
@@ -631,11 +672,14 @@ export function onMyFriendsNamesRandom(context) {
           let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
           DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
           UI.message('Now you can add avatars in Friends: Random')
+
+          sendEvent(context, 'Friends', 'Random Names')
         })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
@@ -662,10 +706,13 @@ export function onMyFriendsNamesRandom(context) {
           DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
         })
         Settings.setSettingForKey('RandomID', undefined)
+
+        sendEvent(context, 'Friends', 'Random Names')
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
+        sendError(context, error)
       })
   }
 }

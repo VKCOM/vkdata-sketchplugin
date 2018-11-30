@@ -30,11 +30,16 @@
     "css-loader": "^1.0.1",
     "html-loader": "^0.5.5",
     "mocha-js-delegate": "^0.1.1",
+    "sketch-module-google-analytics": "^0.1.4",
     "skpm": "^1.1.10"
   },
   "licence": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/VKCOM/vkdata-sketchplugin.git"
+  },
+  "homepage": "https://github.com/VKCOM/vkdata-sketchplugin",
+  "bugs": {
+    "url": "https://github.com/VKCOM/vkdata-sketchplugin/issues"
   }
 }
