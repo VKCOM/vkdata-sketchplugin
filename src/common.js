@@ -4,10 +4,7 @@ const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
 const MochaJSDelegate = require('mocha-js-delegate')
-const {
-  sendEvent,
-  sendError
-} = require('./analytics.js')
+const sendEvent = require('./analytics.js')
 
 const {
   DataSupplier,
@@ -163,7 +160,7 @@ export function onMyPhoto(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -202,7 +199,7 @@ export function onPhotoByUserID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
 }
@@ -243,7 +240,7 @@ export function onMyFriends(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -282,7 +279,7 @@ export function onMyGroups(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -317,7 +314,7 @@ export function onMyFriendsFirstNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -353,7 +350,7 @@ export function onMyFriendsFullNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -389,7 +386,7 @@ export function onMyName(context) {
     .catch(function(error) {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -427,7 +424,7 @@ export function onMyGroupsNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendError(context, error)
+      sendEvent(context, 'Error', error)
     })
 }
 
@@ -473,7 +470,7 @@ export function onVideoByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
 }
@@ -510,7 +507,7 @@ export function onVideoTitleByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
 }
@@ -548,7 +545,7 @@ export function onVideoViewsByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
 }
@@ -599,7 +596,7 @@ export function onMyFriendsRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
@@ -636,7 +633,7 @@ export function onMyFriendsRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
 }
@@ -684,7 +681,7 @@ export function onMyFriendsNamesRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
@@ -711,15 +708,52 @@ export function onMyFriendsNamesRandom(context) {
           DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
         })
         Settings.setSettingForKey('RandomID', undefined)
-        
+
         sendEvent(context, 'Friends', 'Random Names')
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   }
+}
+
+function GroupsRandom(array) {
+  getData('groups.getById', {
+      'group_ids': array,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+      items.forEach((item, index) => {
+        let layer
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+
+        if (response[index].photo_200 == undefined) {
+          process(response[index].photo_100, dataKey, index, item)
+        } else {
+          process(response[index].photo_200, dataKey, index, item)
+        }
+        UI.message('Now you can add names in Groups: Random')
+        sendEvent(context, 'Groups', 'Random')
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent(context, 'Error', error)
+    })
 }
 
 export function onMyGroupsRandom(context) {
@@ -739,87 +773,54 @@ export function onMyGroupsRandom(context) {
         for (let i = 0; i < selection; i++) {
           arrRand.splice(i, 0, String(arr[i]))
         }
+
+        GroupsRandom(arrRand)
         Settings.setSettingForKey('RandomGroupsID', arrRand)
-
-        getData('groups.getById', {
-            'group_ids': arrRand,
-            'access_token': ACCESS_TOKEN,
-            'v': API_VERSION
-          })
-          .then(response => {
-            let dataKey = context.data.key
-            const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-            items.forEach((item, index) => {
-              let layer
-              if (!item.type) {
-                item = sketch.Shape.fromNative(item.sketchObject)
-              }
-              if (item.type === 'DataOverride') {
-                layer = item.symbolInstance
-              } else {
-                layer = item
-              }
-
-              if (response[index].photo_200 == undefined) {
-                process(response[index].photo_100, dataKey, index, item)
-              } else {
-                process(response[index].photo_200, dataKey, index, item)
-              }
-              UI.message('Now you can add names in Groups: Random')
-              sendEvent(context, 'Groups', 'Random')
-            })
-          })
-          .catch(error => {
-            UI.message('Something went wrong')
-            console.error(error)
-            sendError(context, error)
-          })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
-    getData('groups.getById', {
-        'group_ids': ids,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          if (response[index].photo_200 == undefined) {
-            process(response[index].photo_100, dataKey, index, item)
-          } else {
-            process(response[index].photo_200, dataKey, index, item)
-          }
-          UI.message('Now you can add names in Groups: Random')
-
-          sendEvent(context, 'Groups', 'Random')
-        })
-        Settings.setSettingForKey('RandomGroupsID', undefined)
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendError(context, error)
-      })
+    GroupsRandom(ids)
+    Settings.setSettingForKey('RandomGroupsID', undefined)
   }
+}
+
+function GroupsNamesRandom(array) {
+  getData('groups.getById', {
+      'group_ids': array,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+      items.forEach((item, index) => {
+        let layer
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+
+        let name = response[index].name
+        DataSupplier.supplyDataAtIndex(dataKey, name, index)
+        UI.message('Now you can add avatars in Groups: Random')
+        sendEvent(context, 'Groups', 'Random Names')
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent(context, 'Error', error)
+    })
 }
 
 export function onMyGroupsNamesRandom(context) {
@@ -839,79 +840,19 @@ export function onMyGroupsNamesRandom(context) {
         for (let i = 0; i < selection; i++) {
           arrRand.splice(i, 0, String(arr[i]))
         }
+
+        GroupsNamesRandom(arrRand)
         Settings.setSettingForKey('RandomGroupsID', arrRand)
-
-        getData('groups.getById', {
-            'group_ids': arrRand,
-            'access_token': ACCESS_TOKEN,
-            'v': API_VERSION
-          })
-          .then(response => {
-            let dataKey = context.data.key
-            const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-            items.forEach((item, index) => {
-              let layer
-              if (!item.type) {
-                item = sketch.Shape.fromNative(item.sketchObject)
-              }
-              if (item.type === 'DataOverride') {
-                layer = item.symbolInstance
-              } else {
-                layer = item
-              }
-
-              let name = response[index].name
-              DataSupplier.supplyDataAtIndex(dataKey, name, index)
-              UI.message('Now you can add avatars in Groups: Random')
-              sendEvent(context, 'Groups', 'Random Names')
-            })
-          })
-          .catch(error => {
-            UI.message('Something went wrong')
-            console.error(error)
-            sendError(context, error)
-          })
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
-    getData('groups.getById', {
-        'group_ids': ids,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          let name = response[index].name
-          DataSupplier.supplyDataAtIndex(dataKey, name, index)
-          UI.message('Now you can add avatars in Groups: Random')
-          sendEvent(context, 'Groups', 'Random Names')
-        })
-        Settings.setSettingForKey('RandomGroupsID', undefined)
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendError(context, error)
-      })
+    GroupsNamesRandom(ids)
+    Settings.setSettingForKey('RandomGroupsID', undefined)
   }
 }
 
