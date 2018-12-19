@@ -4,7 +4,10 @@ const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
 const MochaJSDelegate = require('mocha-js-delegate')
-const { sendEvent, sendError } = require('./analytics.js')
+const {
+  sendEvent,
+  sendError
+} = require('./analytics.js')
 
 const {
   DataSupplier,
@@ -16,7 +19,7 @@ const APP_ID = '6742961'
 const REDIRECT_URI = 'https://oauth.vk.com/blank.html'
 const SCOPE = 'offline,friends,groups,video'
 const API_URI = 'https://api.vk.com/method/'
-const API_VERSION = '5.90'
+const API_VERSION = '5.92'
 
 const SETTING_KEY = 'vk.photo.id'
 const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
@@ -97,7 +100,8 @@ export function onStartup(context) {
   DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Random', 'MyFriendsRandom')
-  DataSupplier.registerDataSupplier('public.image', 'Groups', 'MyGroups')
+  DataSupplier.registerDataSupplier('public.image', 'Groups: Hints', 'MyGroups')
+  DataSupplier.registerDataSupplier('public.image', 'Groups: Random', 'MyGroupsRandom')
   DataSupplier.registerDataSupplier('public.image', 'Video by..', 'VideoByOwnerID')
 
   //text
@@ -105,7 +109,8 @@ export function onStartup(context) {
   DataSupplier.registerDataSupplier('public.text', 'Friends: First Name', 'MyFriendsFirstNames')
   DataSupplier.registerDataSupplier('public.text', 'Friends: Full Name', 'MyFriendsFullNames')
   DataSupplier.registerDataSupplier('public.text', 'Friends: Random', 'MyFriendsNamesRandom')
-  DataSupplier.registerDataSupplier('public.text', 'Groups: Name', 'MyGroupsNames')
+  DataSupplier.registerDataSupplier('public.text', 'Groups: Hints', 'MyGroupsNames')
+  DataSupplier.registerDataSupplier('public.text', 'Groups: Random', 'MyGroupsNamesRandom')
   DataSupplier.registerDataSupplier('public.text', 'Video Title by..', 'VideoTitleByOwnerID')
   DataSupplier.registerDataSupplier('public.text', 'Video Views by..', 'VideoViewsByOwnerID')
 
@@ -706,8 +711,201 @@ export function onMyFriendsNamesRandom(context) {
           DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
         })
         Settings.setSettingForKey('RandomID', undefined)
-
+        
         sendEvent(context, 'Friends', 'Random Names')
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+        sendError(context, error)
+      })
+  }
+}
+
+export function onMyGroupsRandom(context) {
+  let selection = context.data.items.length
+
+  if (Settings.settingForKey('RandomGroupsID') == undefined) {
+    getData('groups.get', {
+        'user_id': USER_ID,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let arr = response['items']
+        arr = shuffle(arr)
+
+        let arrRand = []
+        for (let i = 0; i < selection; i++) {
+          arrRand.splice(i, 0, String(arr[i]))
+        }
+        Settings.setSettingForKey('RandomGroupsID', arrRand)
+
+        getData('groups.getById', {
+            'group_ids': arrRand,
+            'access_token': ACCESS_TOKEN,
+            'v': API_VERSION
+          })
+          .then(response => {
+            let dataKey = context.data.key
+            const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+            items.forEach((item, index) => {
+              let layer
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+              if (item.type === 'DataOverride') {
+                layer = item.symbolInstance
+              } else {
+                layer = item
+              }
+
+              if (response[index].photo_200 == undefined) {
+                process(response[index].photo_100, dataKey, index, item)
+              } else {
+                process(response[index].photo_200, dataKey, index, item)
+              }
+              UI.message('Now you can add names in Groups: Random')
+              sendEvent(context, 'Groups', 'Random')
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendError(context, error)
+          })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+        sendError(context, error)
+      })
+  } else {
+    let ids = Settings.settingForKey('RandomGroupsID')
+    getData('groups.getById', {
+        'group_ids': ids,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          if (response[index].photo_200 == undefined) {
+            process(response[index].photo_100, dataKey, index, item)
+          } else {
+            process(response[index].photo_200, dataKey, index, item)
+          }
+          UI.message('Now you can add names in Groups: Random')
+
+          sendEvent(context, 'Groups', 'Random')
+        })
+        Settings.setSettingForKey('RandomGroupsID', undefined)
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+        sendError(context, error)
+      })
+  }
+}
+
+export function onMyGroupsNamesRandom(context) {
+  let selection = context.data.items.length
+
+  if (Settings.settingForKey('RandomGroupsID') == undefined) {
+    getData('groups.get', {
+        'user_id': USER_ID,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let arr = response['items']
+        arr = shuffle(arr)
+
+        let arrRand = []
+        for (let i = 0; i < selection; i++) {
+          arrRand.splice(i, 0, String(arr[i]))
+        }
+        Settings.setSettingForKey('RandomGroupsID', arrRand)
+
+        getData('groups.getById', {
+            'group_ids': arrRand,
+            'access_token': ACCESS_TOKEN,
+            'v': API_VERSION
+          })
+          .then(response => {
+            let dataKey = context.data.key
+            const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+            items.forEach((item, index) => {
+              let layer
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+              if (item.type === 'DataOverride') {
+                layer = item.symbolInstance
+              } else {
+                layer = item
+              }
+
+              let name = response[index].name
+              DataSupplier.supplyDataAtIndex(dataKey, name, index)
+              UI.message('Now you can add avatars in Groups: Random')
+              sendEvent(context, 'Groups', 'Random Names')
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendError(context, error)
+          })
+      })
+      .catch(error => {
+        UI.message('Something went wrong')
+        console.error(error)
+        sendError(context, error)
+      })
+  } else {
+    let ids = Settings.settingForKey('RandomGroupsID')
+    getData('groups.getById', {
+        'group_ids': ids,
+        'access_token': ACCESS_TOKEN,
+        'v': API_VERSION
+      })
+      .then(response => {
+        let dataKey = context.data.key
+        const items = util.toArray(context.data.items).map(sketch.fromNative)
+
+        items.forEach((item, index) => {
+          let layer
+          if (!item.type) {
+            item = sketch.Shape.fromNative(item.sketchObject)
+          }
+          if (item.type === 'DataOverride') {
+            layer = item.symbolInstance
+          } else {
+            layer = item
+          }
+
+          let name = response[index].name
+          DataSupplier.supplyDataAtIndex(dataKey, name, index)
+          UI.message('Now you can add avatars in Groups: Random')
+          sendEvent(context, 'Groups', 'Random Names')
+        })
+        Settings.setSettingForKey('RandomGroupsID', undefined)
       })
       .catch(error => {
         UI.message('Something went wrong')
@@ -734,6 +932,23 @@ function getData(method, options) {
         .catch(error => resolve(error))
     })
   }
+}
+
+function shuffle(array) {
+  let currentIndex = array.length,
+    temporaryValue, randomIndex
+
+  while (0 !== currentIndex) {
+
+    randomIndex = Math.floor(Math.random() * currentIndex)
+    currentIndex -= 1
+
+    temporaryValue = array[currentIndex]
+    array[currentIndex] = array[randomIndex]
+    array[randomIndex] = temporaryValue
+  }
+
+  return array
 }
 
 function process(data, dataKey, index, item) {

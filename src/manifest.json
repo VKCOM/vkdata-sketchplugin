@@ -42,7 +42,9 @@
           "VideoTitleByOwnerID": "onVideoTitleByOwnerID",
           "VideoByOwnerID": "onVideoByOwnerID",
           "VideoViewsByOwnerID": "onVideoViewsByOwnerID",
-          "MyFriendsNamesRandom": "onMyFriendsNamesRandom"
+          "MyFriendsNamesRandom": "onMyFriendsNamesRandom",
+          "MyGroupsRandom": "onMyGroupsRandom",
+          "MyGroupsNamesRandom": "onMyGroupsNamesRandom"
         }
       }
     }
