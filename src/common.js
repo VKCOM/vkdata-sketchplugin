@@ -4,7 +4,10 @@ const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
 const MochaJSDelegate = require('mocha-js-delegate')
-const sendEvent = require('./analytics.js')
+const {
+  sendEvent,
+  sendError
+} = require('./analytics.js')
 
 const {
   DataSupplier,
@@ -205,7 +208,7 @@ export function onPhotoByUserID(context) {
 }
 
 export function onMyFriends(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   getData('friends.get', {
       'user_id': USER_ID,
       'order': 'hints',
@@ -245,7 +248,7 @@ export function onMyFriends(context) {
 }
 
 export function onMyGroups(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   getData('groups.get', {
       'user_id': USER_ID,
       'access_token': ACCESS_TOKEN,
@@ -284,7 +287,7 @@ export function onMyGroups(context) {
 }
 
 export function onMyFriendsFirstNames(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   getData('friends.get', {
       'user_id': USER_ID,
       'order': 'hints',
@@ -319,7 +322,7 @@ export function onMyFriendsFirstNames(context) {
 }
 
 export function onMyFriendsFullNames(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   getData('friends.get', {
       'user_id': USER_ID,
       'order': 'hints',
@@ -391,7 +394,7 @@ export function onMyName(context) {
 }
 
 export function onMyGroupsNames(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   getData('groups.get', {
       'user_id': USER_ID,
       'access_token': ACCESS_TOKEN,
@@ -429,7 +432,7 @@ export function onMyGroupsNames(context) {
 }
 
 export function onVideoByOwnerID(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
   if (owner_id != 'null') {
     getData('video.get', {
@@ -476,7 +479,7 @@ export function onVideoByOwnerID(context) {
 }
 
 export function onVideoTitleByOwnerID(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
   if (owner_id != 'null') {
     getData('video.get', {
@@ -513,7 +516,7 @@ export function onVideoTitleByOwnerID(context) {
 }
 
 export function onVideoViewsByOwnerID(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
   let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
   if (owner_id != 'null') {
     getData('video.get', {
@@ -551,9 +554,11 @@ export function onVideoViewsByOwnerID(context) {
 }
 
 export function onMyFriendsRandom(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
 
   if (Settings.settingForKey('RandomID') == undefined) {
+    //console.log('NoCookie' + context)
+    //console.log('1:'+ Settings.settingForKey('RandomID'))
     getData('friends.get', {
         'user_id': USER_ID,
         'order': 'random',
@@ -563,6 +568,7 @@ export function onMyFriendsRandom(context) {
         'v': API_VERSION
       })
       .then(response => {
+        //console.log(String(JSON.stringify(response)))
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
 
@@ -571,7 +577,7 @@ export function onMyFriendsRandom(context) {
           arr.splice(i, 0, String(response['items'][i].id))
         }
         Settings.setSettingForKey('RandomID', arr)
-
+        //console.log('2:'+ Settings.settingForKey('RandomID'))
         items.forEach((item, index) => {
           let layer
           if (!item.type) {
@@ -599,6 +605,8 @@ export function onMyFriendsRandom(context) {
         sendEvent(context, 'Error', error)
       })
   } else {
+    //console.log('Cookie' + context)
+    //console.log('3:'+ Settings.settingForKey('RandomID'))
     let userids = Settings.settingForKey('RandomID').join(',')
     getData('users.get', {
         'user_ids': userids,
@@ -607,6 +615,7 @@ export function onMyFriendsRandom(context) {
         'v': API_VERSION
       })
       .then(response => {
+        //console.log(String(JSON.stringify(response)))
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
@@ -628,18 +637,18 @@ export function onMyFriendsRandom(context) {
 
           sendEvent(context, 'Friends', 'Random')
         })
-        Settings.setSettingForKey('RandomID', undefined)
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
         sendEvent(context, 'Error', error)
       })
+      Settings.setSettingForKey('RandomID', undefined)
   }
 }
 
 export function onMyFriendsNamesRandom(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
 
   if (Settings.settingForKey('RandomID') == undefined) {
     getData('friends.get', {
@@ -707,19 +716,19 @@ export function onMyFriendsNamesRandom(context) {
           let full_name = response[index].first_name + ' ' + response[index].last_name
           DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
         })
-        Settings.setSettingForKey('RandomID', undefined)
 
         sendEvent(context, 'Friends', 'Random Names')
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendError(context, error)
       })
+      Settings.setSettingForKey('RandomID', undefined)
   }
 }
 
-function GroupsRandom(array) {
+function GroupsRandom(context, array) {
   getData('groups.getById', {
       'group_ids': array,
       'access_token': ACCESS_TOKEN,
@@ -757,7 +766,7 @@ function GroupsRandom(array) {
 }
 
 export function onMyGroupsRandom(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
 
   if (Settings.settingForKey('RandomGroupsID') == undefined) {
     getData('groups.get', {
@@ -774,7 +783,7 @@ export function onMyGroupsRandom(context) {
           arrRand.splice(i, 0, String(arr[i]))
         }
 
-        GroupsRandom(arrRand)
+        GroupsRandom(context, arrRand)
         Settings.setSettingForKey('RandomGroupsID', arrRand)
       })
       .catch(error => {
@@ -784,12 +793,12 @@ export function onMyGroupsRandom(context) {
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
-    GroupsRandom(ids)
+    GroupsRandom(context, ids)
     Settings.setSettingForKey('RandomGroupsID', undefined)
   }
 }
 
-function GroupsNamesRandom(array) {
+function GroupsNamesRandom(context, array) {
   getData('groups.getById', {
       'group_ids': array,
       'access_token': ACCESS_TOKEN,
@@ -824,7 +833,7 @@ function GroupsNamesRandom(array) {
 }
 
 export function onMyGroupsNamesRandom(context) {
-  let selection = context.data.items.length
+  let selection = context.data.requestedCount
 
   if (Settings.settingForKey('RandomGroupsID') == undefined) {
     getData('groups.get', {
@@ -841,7 +850,7 @@ export function onMyGroupsNamesRandom(context) {
           arrRand.splice(i, 0, String(arr[i]))
         }
 
-        GroupsNamesRandom(arrRand)
+        GroupsNamesRandom(context, arrRand)
         Settings.setSettingForKey('RandomGroupsID', arrRand)
       })
       .catch(error => {
@@ -851,7 +860,7 @@ export function onMyGroupsNamesRandom(context) {
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
-    GroupsNamesRandom(ids)
+    GroupsNamesRandom(context, ids)
     Settings.setSettingForKey('RandomGroupsID', undefined)
   }
 }
@@ -880,7 +889,6 @@ function shuffle(array) {
     temporaryValue, randomIndex
 
   while (0 !== currentIndex) {
-
     randomIndex = Math.floor(Math.random() * currentIndex)
     currentIndex -= 1
 
