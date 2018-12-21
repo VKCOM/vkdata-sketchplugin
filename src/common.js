@@ -905,7 +905,6 @@ function shuffle(array) {
 }
 
 function process(data, dataKey, index, item) {
-  console.log(String(data))
   return getImageFromURL(data).then(imagePath => {
     if (!imagePath) {
       return
