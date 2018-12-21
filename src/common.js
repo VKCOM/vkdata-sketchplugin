@@ -114,14 +114,18 @@ export function onStartup(context) {
   DataSupplier.registerDataSupplier('public.text', 'Video Title by..', 'VideoTitleByOwnerID')
   DataSupplier.registerDataSupplier('public.text', 'Video Views by..', 'VideoViewsByOwnerID')
 
-  getData('stats.trackVisitor', {
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
+  if (ACCESS_TOKEN !== undefined) {
+    getData('stats.trackVisitor', {
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
+  }
   sendEvent(context, 'Launch Sketch', 'Hooray')
 }
 
 export function onShutdown() {
+  Settings.setSettingForKey('RandomID', undefined)
+  Settings.setSettingForKey('RandomGroupsID', undefined)
   DataSupplier.deregisterDataSuppliers()
   try {
     fs.rmdirSync(FOLDER)
@@ -643,7 +647,7 @@ export function onMyFriendsRandom(context) {
         console.error(error)
         sendEvent(context, 'Error', error)
       })
-      Settings.setSettingForKey('RandomID', undefined)
+    Settings.setSettingForKey('RandomID', undefined)
   }
 }
 
@@ -722,9 +726,9 @@ export function onMyFriendsNamesRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendError(context, error)
+        sendEvent(context, 'Error', error)
       })
-      Settings.setSettingForKey('RandomID', undefined)
+    Settings.setSettingForKey('RandomID', undefined)
   }
 }
 
@@ -901,6 +905,7 @@ function shuffle(array) {
 }
 
 function process(data, dataKey, index, item) {
+  console.log(String(data))
   return getImageFromURL(data).then(imagePath => {
     if (!imagePath) {
       return
@@ -908,7 +913,7 @@ function process(data, dataKey, index, item) {
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
 
     if (item.type != 'DataOverride') {
-      Settings.setLayerSettingForKey(item, SETTING_KEY, data.id)
+      Settings.setLayerSettingForKey(item, SETTING_KEY, data)
     }
 
     let downloadLocation = data
