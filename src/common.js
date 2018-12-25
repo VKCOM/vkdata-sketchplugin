@@ -155,10 +155,10 @@ export function onMyPhoto(context) {
           layer = item
         }
 
-        if (response[index].photo_200 == undefined) {
-          process(response[index].photo_100, dataKey, index, item)
+        if (response[0].photo_200 == undefined) {
+          process(response[0].photo_100, dataKey, index, item)
         } else {
-          process(response[index].photo_200, dataKey, index, item)
+          process(response[0].photo_200, dataKey, index, item)
         }
 
         sendEvent(context, 'User', 'My Avatar')
@@ -167,12 +167,13 @@ export function onMyPhoto(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'My Avatar: ' + error)
     })
 }
 
 export function onPhotoByUserID(context) {
   let owner_id = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
+  let requestedCount = context.data.requestedCount
   if (owner_id != 'null') {
     getData('users.get', {
         'user_ids': owner_id,
@@ -194,6 +195,13 @@ export function onPhotoByUserID(context) {
             layer = item
           }
 
+          if (requestedCount > response.length) {
+            let diff = requestedCount - response.length
+            for (let i = 0; i < diff; i++) {
+              response.push(response[i])
+            }
+          }
+
           if (response[index].photo_200 == undefined) {
             process(response[index].photo_100, dataKey, index, item)
           } else {
@@ -206,7 +214,7 @@ export function onPhotoByUserID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'By User ID: ' + error)
       })
   }
 }
@@ -247,7 +255,7 @@ export function onMyFriends(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Friends Hints: ' + error)
     })
 }
 
@@ -286,7 +294,7 @@ export function onMyGroups(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Groups Avatar: ' + error)
     })
 }
 
@@ -321,7 +329,7 @@ export function onMyFriendsFirstNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Friends First Names ' + error)
     })
 }
 
@@ -357,7 +365,7 @@ export function onMyFriendsFullNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Friends Full Names: ' + error)
     })
 }
 
@@ -384,7 +392,7 @@ export function onMyName(context) {
           layer = item
         }
 
-        let full_name = response[index].first_name + ' ' + response[index].last_name
+        let full_name = response[0].first_name + ' ' + response[0].last_name
         DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
 
         sendEvent(context, 'User', 'Names')
@@ -393,7 +401,7 @@ export function onMyName(context) {
     .catch(function(error) {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'User Names: ' + error)
     })
 }
 
@@ -431,7 +439,7 @@ export function onMyGroupsNames(context) {
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Groups Names: ' + error)
     })
 }
 
@@ -477,7 +485,7 @@ export function onVideoByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Video Thumbnails: ' + error)
       })
   }
 }
@@ -505,6 +513,14 @@ export function onVideoTitleByOwnerID(context) {
           } else {
             layer = item
           }
+
+          if (selection > response['items'].length) {
+            let diff = selection - response['items'].length
+            for (let i = 0; i < diff; i++) {
+              response['items'].push(response['items'][i])
+            }
+          }
+
           let name = response['items'][index].title
           DataSupplier.supplyDataAtIndex(dataKey, name, index)
 
@@ -514,7 +530,7 @@ export function onVideoTitleByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Video Title: ' + error)
       })
   }
 }
@@ -542,6 +558,7 @@ export function onVideoViewsByOwnerID(context) {
           } else {
             layer = item
           }
+
           let views = response['items'][index].views
           views = views + ' просмотров'
           DataSupplier.supplyDataAtIndex(dataKey, views, index)
@@ -552,7 +569,7 @@ export function onVideoViewsByOwnerID(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Video Views: ' + error)
       })
   }
 }
@@ -561,8 +578,6 @@ export function onMyFriendsRandom(context) {
   let selection = context.data.requestedCount
 
   if (Settings.settingForKey('RandomID') == undefined) {
-    //console.log('NoCookie' + context)
-    //console.log('1:'+ Settings.settingForKey('RandomID'))
     getData('friends.get', {
         'user_id': USER_ID,
         'order': 'random',
@@ -572,7 +587,6 @@ export function onMyFriendsRandom(context) {
         'v': API_VERSION
       })
       .then(response => {
-        //console.log(String(JSON.stringify(response)))
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
 
@@ -581,7 +595,6 @@ export function onMyFriendsRandom(context) {
           arr.splice(i, 0, String(response['items'][i].id))
         }
         Settings.setSettingForKey('RandomID', arr)
-        //console.log('2:'+ Settings.settingForKey('RandomID'))
         items.forEach((item, index) => {
           let layer
           if (!item.type) {
@@ -606,11 +619,9 @@ export function onMyFriendsRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Friends Random NoCookie: '+ error)
       })
   } else {
-    //console.log('Cookie' + context)
-    //console.log('3:'+ Settings.settingForKey('RandomID'))
     let userids = Settings.settingForKey('RandomID').join(',')
     getData('users.get', {
         'user_ids': userids,
@@ -645,7 +656,7 @@ export function onMyFriendsRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Friends Random Cookie: ' + error)
       })
     Settings.setSettingForKey('RandomID', undefined)
   }
@@ -694,7 +705,7 @@ export function onMyFriendsNamesRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Friends Random Names NoCookie: ' + error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
@@ -726,7 +737,7 @@ export function onMyFriendsNamesRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Friends Random Names Cookie: '+ error)
       })
     Settings.setSettingForKey('RandomID', undefined)
   }
@@ -758,14 +769,13 @@ function GroupsRandom(context, array) {
         } else {
           process(response[index].photo_200, dataKey, index, item)
         }
-        UI.message('Now you can add names in Groups: Random')
         sendEvent(context, 'Groups', 'Random')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Groups Random: ' + error)
     })
 }
 
@@ -788,12 +798,13 @@ export function onMyGroupsRandom(context) {
         }
 
         GroupsRandom(context, arrRand)
+        UI.message('Now you can add names in Groups: Random')
         Settings.setSettingForKey('RandomGroupsID', arrRand)
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Groups Random 2: ' + error)
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
@@ -825,14 +836,13 @@ function GroupsNamesRandom(context, array) {
 
         let name = response[index].name
         DataSupplier.supplyDataAtIndex(dataKey, name, index)
-        UI.message('Now you can add avatars in Groups: Random')
         sendEvent(context, 'Groups', 'Random Names')
       })
     })
     .catch(error => {
       UI.message('Something went wrong')
       console.error(error)
-      sendEvent(context, 'Error', error)
+      sendEvent(context, 'Error', 'Groups Names Random: ' + error)
     })
 }
 
@@ -855,12 +865,13 @@ export function onMyGroupsNamesRandom(context) {
         }
 
         GroupsNamesRandom(context, arrRand)
+        UI.message('Now you can add avatars in Groups: Random')
         Settings.setSettingForKey('RandomGroupsID', arrRand)
       })
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', error)
+        sendEvent(context, 'Error', 'Groups Names Random 2' + error)
       })
   } else {
     let ids = Settings.settingForKey('RandomGroupsID')
