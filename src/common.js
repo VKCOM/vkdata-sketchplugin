@@ -95,7 +95,6 @@ export function logout() {
 }
 
 export function onStartup(context) {
-  //image
   DataSupplier.registerDataSupplier('public.image', 'Your Avatar', 'MyPhoto')
   DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
@@ -104,9 +103,9 @@ export function onStartup(context) {
   DataSupplier.registerDataSupplier('public.image', 'Groups: Random', 'MyGroupsRandom')
   DataSupplier.registerDataSupplier('public.image', 'Video by..', 'VideoByOwnerID')
 
-  //text
   DataSupplier.registerDataSupplier('public.text', 'Your Name', 'MyName')
   DataSupplier.registerDataSupplier('public.text', 'Friends: First Name', 'MyFriendsFirstNames')
+  DataSupplier.registerDataSupplier('public.text', 'Friends: Last Name', 'MyFriendsLastNames')
   DataSupplier.registerDataSupplier('public.text', 'Friends: Full Name', 'MyFriendsFullNames')
   DataSupplier.registerDataSupplier('public.text', 'Friends: Random', 'MyFriendsNamesRandom')
   DataSupplier.registerDataSupplier('public.text', 'Groups: Hints', 'MyGroupsNames')
@@ -332,6 +331,42 @@ export function onMyFriendsFirstNames(context) {
       sendEvent(context, 'Error', 'Friends First Names ' + error)
     })
 }
+
+export function onMyFriendsLastNames(context) {
+  let selection = context.data.requestedCount
+  getData('friends.get', {
+      'user_id': USER_ID,
+      'order': 'hints',
+      'fields': 'last_name',
+      'access_token': ACCESS_TOKEN,
+      'count': selection,
+      'v': API_VERSION
+    })
+    .then(response => {
+      let dataKey = context.data.key
+      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        let layer
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+        if (item.type === 'DataOverride') {
+          layer = item.symbolInstance
+        } else {
+          layer = item
+        }
+        DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].last_name, index)
+
+        sendEvent(context, 'Friends', 'Last Names')
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent(context, 'Error', 'Friends Last Names ' + error)
+    })
+}
+
 
 export function onMyFriendsFullNames(context) {
   let selection = context.data.requestedCount

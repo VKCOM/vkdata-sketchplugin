@@ -26,12 +26,12 @@
   ],
   "dependencies": {
     "@skpm/extract-loader": "^2.0.2",
-    "@skpm/fs": "^0.2.2",
+    "@skpm/fs": "^0.2.3",
     "css-loader": "^1.0.1",
     "html-loader": "^0.5.5",
     "mocha-js-delegate": "^0.1.1",
     "sketch-module-google-analytics": "^0.1.4",
-    "skpm": "^1.1.10"
+    "skpm": "^1.1.11"
   },
   "licence": "MIT",
   "repository": {

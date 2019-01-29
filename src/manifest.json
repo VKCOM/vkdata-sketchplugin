@@ -36,6 +36,7 @@
           "MyFriendsRandom": "onMyFriendsRandom",
           "MyGroups": "onMyGroups",
           "MyFriendsFirstNames": "onMyFriendsFirstNames",
+          "MyFriendsLastNames": "onMyFriendsLastNames",
           "MyFriendsFullNames": "onMyFriendsFullNames",
           "MyGroupsNames": "onMyGroupsNames",
           "MyName": "onMyName",
