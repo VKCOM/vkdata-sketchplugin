@@ -5,8 +5,7 @@ const path = require('path')
 const fs = require('@skpm/fs')
 const MochaJSDelegate = require('mocha-js-delegate')
 const {
-  sendEvent,
-  sendError
+  sendEvent
 } = require('./analytics.js')
 
 const {
@@ -29,15 +28,15 @@ const USER_ID = Settings.settingForKey('USER_ID')
 
 const isDEV = false
 
-export function checkauth() {
-  if (Settings.settingForKey('ACCESS_TOKEN') == undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV == true) {
+export function checkauth () {
+  if (Settings.settingForKey('ACCESS_TOKEN') === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV === true) {
     auth()
   } else {
     UI.message('You can use the plugin')
   }
 }
 
-function auth() {
+function auth () {
   let URL = `https://oauth.vk.com/authorize?client_id=${APP_ID}&display=page&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=token&v=${API_VERSION}`
   let request = NSURLRequest.requestWithURL(NSURL.URLWithString(URL))
 
@@ -51,25 +50,24 @@ function auth() {
   let mask = NSTitledWindowMask + NSClosableWindowMask
   let panel = NSPanel.alloc().initWithContentRect_styleMask_backing_defer(frame, mask, NSBackingStoreBuffered, true)
   let delegate = new MochaJSDelegate({
-    'webView:didCommitNavigation:': function(webView) {
+    'webView:didCommitNavigation:': function (webView) {
       let components = NSURLComponents.componentsWithURL_resolvingAgainstBaseURL(webView.URL(), false)
-      if (components.path() == "/blank.html") {
+      if (components.path() === '/blank.html') {
         let fragment = components.fragment()
-        let url = NSURL.URLWithString("https://vk.com/?" + String(fragment))
+        let url = NSURL.URLWithString('https://vk.com/?' + String(fragment))
         let queryItems = NSURLComponents.componentsWithURL_resolvingAgainstBaseURL(url, false).queryItems()
 
-        let values = queryItems.reduce(function(prev, item) {
+        let values = queryItems.reduce(function (prev, item) {
           prev[String(item.name())] = String(item.value())
           return prev
         }, {})
 
-        let token = values["access_token"]
-        let user_id = values["user_id"]
+        let token = values['access_token']
+        let userId = values['user_id']
 
-        if (token !== undefined && user_id !== undefined) {
-
+        if (token !== undefined && userId !== undefined) {
           Settings.setSettingForKey('ACCESS_TOKEN', token)
-          Settings.setSettingForKey('USER_ID', user_id)
+          Settings.setSettingForKey('USER_ID', userId)
           Settings.setSettingForKey('SCOPE_KEY', SCOPE)
 
           UI.message('Success')
@@ -87,14 +85,14 @@ function auth() {
   panel.center()
 }
 
-export function logout() {
+export function logout () {
   Settings.setSettingForKey('ACCESS_TOKEN', undefined)
   Settings.setSettingForKey('USER_ID', undefined)
   Settings.setSettingForKey('SCOPE_KEY', undefined)
   auth()
 }
 
-export function onStartup(context) {
+export function onStartup (context) {
   DataSupplier.registerDataSupplier('public.image', 'Your Avatar', 'MyPhoto')
   DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
@@ -122,7 +120,7 @@ export function onStartup(context) {
   sendEvent(context, 'Launch Sketch', 'Hooray')
 }
 
-export function onShutdown() {
+export function onShutdown () {
   Settings.setSettingForKey('RandomID', undefined)
   Settings.setSettingForKey('RandomGroupsID', undefined)
   DataSupplier.deregisterDataSuppliers()
@@ -133,13 +131,13 @@ export function onShutdown() {
   }
 }
 
-export function onMyPhoto(context) {
+export function onMyPhoto (context) {
   getData('users.get', {
-      'user_ids': USER_ID,
-      'fields': 'photo_200,photo_100',
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
+    'user_ids': USER_ID,
+    'fields': 'photo_200,photo_100',
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -154,10 +152,12 @@ export function onMyPhoto(context) {
           layer = item
         }
 
-        if (response[0].photo_200 == undefined) {
+        if (!isEmpty(response[0].photo_200)) {
+          process(response[0].photo_200, dataKey, index, item)
+        } else if (!isEmpty(response[0].photo_100)) {
           process(response[0].photo_100, dataKey, index, item)
         } else {
-          process(response[0].photo_200, dataKey, index, item)
+          sendEvent(context, 'Error', 'My Avatar: No avatars')
         }
 
         sendEvent(context, 'User', 'My Avatar')
@@ -170,16 +170,16 @@ export function onMyPhoto(context) {
     })
 }
 
-export function onPhotoByUserID(context) {
-  let owner_id = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
+export function onPhotoByUserID (context) {
+  let ownerId = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
   let requestedCount = context.data.requestedCount
-  if (owner_id != 'null') {
+  if (ownerId !== 'null') {
     getData('users.get', {
-        'user_ids': owner_id,
-        'fields': 'photo_200,photo_100',
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'user_ids': ownerId,
+      'fields': 'photo_200,photo_100',
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -201,10 +201,10 @@ export function onPhotoByUserID(context) {
             }
           }
 
-          if (response[index].photo_200 == undefined) {
-            process(response[index].photo_100, dataKey, index, item)
-          } else {
+          if (!isEmpty(response[index].photo_200)) {
             process(response[index].photo_200, dataKey, index, item)
+          } else {
+            process(response[index].photo_100, dataKey, index, item)
           }
 
           sendEvent(context, 'Friends', 'By User ID')
@@ -218,16 +218,16 @@ export function onPhotoByUserID(context) {
   }
 }
 
-export function onMyFriends(context) {
+export function onMyFriends (context) {
   let selection = context.data.requestedCount
   getData('friends.get', {
-      'user_id': USER_ID,
-      'order': 'hints',
-      'fields': 'photo_200,photo_100',
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'order': 'hints',
+    'fields': 'photo_200,photo_100',
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -242,10 +242,10 @@ export function onMyFriends(context) {
           layer = item
         }
 
-        if (response['items'][index].photo_200 == undefined) {
-          process(response['items'][index].photo_100, dataKey, index, item)
-        } else {
+        if (!isEmpty(response['items'][index].photo_200)) {
           process(response['items'][index].photo_200, dataKey, index, item)
+        } else {
+          process(response['items'][index].photo_100, dataKey, index, item)
         }
 
         sendEvent(context, 'Friends', 'Hints')
@@ -258,15 +258,15 @@ export function onMyFriends(context) {
     })
 }
 
-export function onMyGroups(context) {
+export function onMyGroups (context) {
   let selection = context.data.requestedCount
   getData('groups.get', {
-      'user_id': USER_ID,
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'extended': 1,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'extended': 1,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -281,10 +281,10 @@ export function onMyGroups(context) {
           layer = item
         }
 
-        if (response['items'][index].photo_200 == undefined) {
-          process(response['items'][index].photo_100, dataKey, index, item)
-        } else {
+        if (!isEmpty(response['items'][index].photo_200)) {
           process(response['items'][index].photo_200, dataKey, index, item)
+        } else {
+          process(response['items'][index].photo_100, dataKey, index, item)
         }
 
         sendEvent(context, 'Groups', 'Avatar')
@@ -297,16 +297,16 @@ export function onMyGroups(context) {
     })
 }
 
-export function onMyFriendsFirstNames(context) {
+export function onMyFriendsFirstNames (context) {
   let selection = context.data.requestedCount
   getData('friends.get', {
-      'user_id': USER_ID,
-      'order': 'hints',
-      'fields': 'first_name',
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'order': 'hints',
+    'fields': 'first_name',
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -332,16 +332,16 @@ export function onMyFriendsFirstNames(context) {
     })
 }
 
-export function onMyFriendsLastNames(context) {
+export function onMyFriendsLastNames (context) {
   let selection = context.data.requestedCount
   getData('friends.get', {
-      'user_id': USER_ID,
-      'order': 'hints',
-      'fields': 'last_name',
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'order': 'hints',
+    'fields': 'last_name',
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -367,17 +367,16 @@ export function onMyFriendsLastNames(context) {
     })
 }
 
-
-export function onMyFriendsFullNames(context) {
+export function onMyFriendsFullNames (context) {
   let selection = context.data.requestedCount
   getData('friends.get', {
-      'user_id': USER_ID,
-      'order': 'hints',
-      'fields': 'first_name',
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'order': 'hints',
+    'fields': 'first_name',
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -391,8 +390,8 @@ export function onMyFriendsFullNames(context) {
         } else {
           layer = item
         }
-        let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
-        DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+        let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
+        DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
 
         sendEvent(context, 'Friends', 'Full Names')
       })
@@ -404,13 +403,13 @@ export function onMyFriendsFullNames(context) {
     })
 }
 
-export function onMyName(context) {
+export function onMyName (context) {
   getData('users.get', {
-      'user_ids': USER_ID,
-      'fields': 'first_name,last_name',
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
+    'user_ids': USER_ID,
+    'fields': 'first_name,last_name',
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -427,28 +426,28 @@ export function onMyName(context) {
           layer = item
         }
 
-        let full_name = response[0].first_name + ' ' + response[0].last_name
-        DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+        let fullName = response[0].first_name + ' ' + response[0].last_name
+        DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
 
         sendEvent(context, 'User', 'Names')
       })
     })
-    .catch(function(error) {
+    .catch(function (error) {
       UI.message('Something went wrong')
       console.error(error)
       sendEvent(context, 'Error', 'User Names: ' + error)
     })
 }
 
-export function onMyGroupsNames(context) {
+export function onMyGroupsNames (context) {
   let selection = context.data.requestedCount
   getData('groups.get', {
-      'user_id': USER_ID,
-      'access_token': ACCESS_TOKEN,
-      'count': selection,
-      'extended': 1,
-      'v': API_VERSION
-    })
+    'user_id': USER_ID,
+    'access_token': ACCESS_TOKEN,
+    'count': selection,
+    'extended': 1,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -478,16 +477,16 @@ export function onMyGroupsNames(context) {
     })
 }
 
-export function onVideoByOwnerID(context) {
+export function onVideoByOwnerID (context) {
   let selection = context.data.requestedCount
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
+  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (ownerId !== 'null') {
     getData('video.get', {
-        'owner_id': owner_id,
-        'count': selection,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'owner_id': ownerId,
+      'count': selection,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -502,13 +501,13 @@ export function onVideoByOwnerID(context) {
             layer = item
           }
 
-          if (response['items'][index].photo_1280 !== undefined) {
+          if (!isEmpty(response['items'][index].photo_1280)) {
             process(response['items'][index].photo_1280, dataKey, index, item)
-          } else if (response['items'][index].photo_800 !== undefined) {
+          } else if (!isEmpty(response['items'][index].photo_800)) {
             process(response['items'][index].photo_800, dataKey, index, item)
-          } else if (response['items'][index].photo_640 !== undefined) {
+          } else if (!isEmpty(response['items'][index].photo_640)) {
             process(response['items'][index].photo_640, dataKey, index, item)
-          } else if (response['items'][index].photo_320 !== undefined) {
+          } else if (!isEmpty(response['items'][index].photo_320)) {
             process(response['items'][index].photo_320, dataKey, index, item)
           } else {
             process(response['items'][index].photo_130, dataKey, index, item)
@@ -525,16 +524,16 @@ export function onVideoByOwnerID(context) {
   }
 }
 
-export function onVideoTitleByOwnerID(context) {
+export function onVideoTitleByOwnerID (context) {
   let selection = context.data.requestedCount
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
+  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (ownerId !== 'null') {
     getData('video.get', {
-        'owner_id': owner_id,
-        'count': selection,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'owner_id': ownerId,
+      'count': selection,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -570,16 +569,16 @@ export function onVideoTitleByOwnerID(context) {
   }
 }
 
-export function onVideoViewsByOwnerID(context) {
+export function onVideoViewsByOwnerID (context) {
   let selection = context.data.requestedCount
-  let owner_id = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
-  if (owner_id != 'null') {
+  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  if (ownerId !== 'null') {
     getData('video.get', {
-        'owner_id': owner_id,
-        'count': selection,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'owner_id': ownerId,
+      'count': selection,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -609,18 +608,18 @@ export function onVideoViewsByOwnerID(context) {
   }
 }
 
-export function onMyFriendsRandom(context) {
+export function onMyFriendsRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomID') == undefined) {
+  if (Settings.settingForKey('RandomID') === undefined) {
     getData('friends.get', {
-        'user_id': USER_ID,
-        'order': 'random',
-        'fields': 'photo_200,photo_100',
-        'access_token': ACCESS_TOKEN,
-        'count': selection,
-        'v': API_VERSION
-      })
+      'user_id': USER_ID,
+      'order': 'random',
+      'fields': 'photo_200,photo_100',
+      'access_token': ACCESS_TOKEN,
+      'count': selection,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -641,10 +640,10 @@ export function onMyFriendsRandom(context) {
             layer = item
           }
 
-          if (response['items'][index].photo_200 == undefined) {
-            process(response['items'][index].photo_100, dataKey, index, item)
-          } else {
+          if (!isEmpty(response['items'][index].photo_200)) {
             process(response['items'][index].photo_200, dataKey, index, item)
+          } else {
+            process(response['items'][index].photo_100, dataKey, index, item)
           }
           UI.message('Now you can add names in Friends: Random')
 
@@ -654,18 +653,18 @@ export function onMyFriendsRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', 'Friends Random NoCookie: '+ error)
+        sendEvent(context, 'Error', 'Friends Random NoCookie: ' + error)
       })
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
     getData('users.get', {
-        'user_ids': userids,
-        'fields': 'photo_200,photo_100',
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'user_ids': userids,
+      'fields': 'photo_200,photo_100',
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
-        //console.log(String(JSON.stringify(response)))
+        // console.log(String(JSON.stringify(response)))
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
@@ -679,10 +678,10 @@ export function onMyFriendsRandom(context) {
             layer = item
           }
 
-          if (response[index].photo_200 == undefined) {
-            process(response[index].photo_100, dataKey, index, item)
-          } else {
+          if (!isEmpty(response[index].photo_200)) {
             process(response[index].photo_200, dataKey, index, item)
+          } else {
+            process(response[index].photo_100, dataKey, index, item)
           }
 
           sendEvent(context, 'Friends', 'Random')
@@ -697,18 +696,18 @@ export function onMyFriendsRandom(context) {
   }
 }
 
-export function onMyFriendsNamesRandom(context) {
+export function onMyFriendsNamesRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomID') == undefined) {
+  if (Settings.settingForKey('RandomID') === undefined) {
     getData('friends.get', {
-        'user_id': USER_ID,
-        'order': 'random',
-        'fields': 'first_name,last_name',
-        'access_token': ACCESS_TOKEN,
-        'count': selection,
-        'v': API_VERSION
-      })
+      'user_id': USER_ID,
+      'order': 'random',
+      'fields': 'first_name,last_name',
+      'access_token': ACCESS_TOKEN,
+      'count': selection,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -730,8 +729,8 @@ export function onMyFriendsNamesRandom(context) {
             layer = item
           }
 
-          let full_name = response['items'][index].first_name + ' ' + response['items'][index].last_name
-          DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+          let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
+          DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
           UI.message('Now you can add avatars in Friends: Random')
 
           sendEvent(context, 'Friends', 'Random Names')
@@ -745,11 +744,11 @@ export function onMyFriendsNamesRandom(context) {
   } else {
     let userids = Settings.settingForKey('RandomID').join(',')
     getData('users.get', {
-        'user_ids': userids,
-        'fields': 'first_name,last_name',
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'user_ids': userids,
+      'fields': 'first_name,last_name',
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let dataKey = context.data.key
         const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -763,8 +762,8 @@ export function onMyFriendsNamesRandom(context) {
           } else {
             layer = item
           }
-          let full_name = response[index].first_name + ' ' + response[index].last_name
-          DataSupplier.supplyDataAtIndex(dataKey, full_name, index)
+          let fullName = response[index].first_name + ' ' + response[index].last_name
+          DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
         })
 
         sendEvent(context, 'Friends', 'Random Names')
@@ -772,18 +771,18 @@ export function onMyFriendsNamesRandom(context) {
       .catch(error => {
         UI.message('Something went wrong')
         console.error(error)
-        sendEvent(context, 'Error', 'Friends Random Names Cookie: '+ error)
+        sendEvent(context, 'Error', 'Friends Random Names Cookie: ' + error)
       })
     Settings.setSettingForKey('RandomID', undefined)
   }
 }
 
-function GroupsRandom(context, array) {
+function GroupsRandom (context, array) {
   getData('groups.getById', {
-      'group_ids': array,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
+    'group_ids': array,
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -799,10 +798,10 @@ function GroupsRandom(context, array) {
           layer = item
         }
 
-        if (response[index].photo_200 == undefined) {
-          process(response[index].photo_100, dataKey, index, item)
-        } else {
+        if (!isEmpty(response[index].photo_200)) {
           process(response[index].photo_200, dataKey, index, item)
+        } else {
+          process(response[index].photo_100, dataKey, index, item)
         }
         sendEvent(context, 'Groups', 'Random')
       })
@@ -814,15 +813,15 @@ function GroupsRandom(context, array) {
     })
 }
 
-export function onMyGroupsRandom(context) {
+export function onMyGroupsRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomGroupsID') == undefined) {
+  if (Settings.settingForKey('RandomGroupsID') === undefined) {
     getData('groups.get', {
-        'user_id': USER_ID,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'user_id': USER_ID,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let arr = response['items']
         arr = shuffle(arr)
@@ -848,12 +847,12 @@ export function onMyGroupsRandom(context) {
   }
 }
 
-function GroupsNamesRandom(context, array) {
+function GroupsNamesRandom (context, array) {
   getData('groups.getById', {
-      'group_ids': array,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
+    'group_ids': array,
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
     .then(response => {
       let dataKey = context.data.key
       const items = util.toArray(context.data.items).map(sketch.fromNative)
@@ -881,15 +880,15 @@ function GroupsNamesRandom(context, array) {
     })
 }
 
-export function onMyGroupsNamesRandom(context) {
+export function onMyGroupsNamesRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomGroupsID') == undefined) {
+  if (Settings.settingForKey('RandomGroupsID') === undefined) {
     getData('groups.get', {
-        'user_id': USER_ID,
-        'access_token': ACCESS_TOKEN,
-        'v': API_VERSION
-      })
+      'user_id': USER_ID,
+      'access_token': ACCESS_TOKEN,
+      'v': API_VERSION
+    })
       .then(response => {
         let arr = response['items']
         arr = shuffle(arr)
@@ -915,11 +914,11 @@ export function onMyGroupsNamesRandom(context) {
   }
 }
 
-function getData(method, options) {
-  if (Settings.settingForKey('ACCESS_TOKEN') == undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV == true) {
+function getData (method, options) {
+  if (Settings.settingForKey('ACCESS_TOKEN') === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV === true) {
     auth()
   } else {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       let esc = encodeURIComponent
       let query = Object.keys(options)
         .map(key => esc(key) + '=' + esc(options[key]))
@@ -934,11 +933,19 @@ function getData(method, options) {
   }
 }
 
-function shuffle(array) {
-  let currentIndex = array.length,
-    temporaryValue, randomIndex
+function isEmpty (obj) {
+  for (var key in obj) {
+    return false
+  }
+  return true
+}
 
-  while (0 !== currentIndex) {
+function shuffle (array) {
+  let currentIndex = array.length
+  let temporaryValue,
+    randomIndex
+
+  while (currentIndex !== 0) {
     randomIndex = Math.floor(Math.random() * currentIndex)
     currentIndex -= 1
 
@@ -950,14 +957,14 @@ function shuffle(array) {
   return array
 }
 
-function process(data, dataKey, index, item) {
+function process (data, dataKey, index, item) {
   return getImageFromURL(data).then(imagePath => {
     if (!imagePath) {
       return
     }
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
 
-    if (item.type != 'DataOverride') {
+    if (item.type !== 'DataOverride') {
       Settings.setLayerSettingForKey(item, SETTING_KEY, data)
     }
 
@@ -966,7 +973,7 @@ function process(data, dataKey, index, item) {
   })
 }
 
-function getImageFromURL(url) {
+function getImageFromURL (url) {
   return fetch(url)
     .then(res => res.blob())
     .then(saveTempFileFromImageData)
@@ -976,7 +983,7 @@ function getImageFromURL(url) {
     })
 }
 
-function saveTempFileFromImageData(imageData) {
+function saveTempFileFromImageData (imageData) {
   const guid = NSProcessInfo.processInfo().globallyUniqueString()
   const imagePath = path.join(FOLDER, `${guid}.jpg`)
   try {
