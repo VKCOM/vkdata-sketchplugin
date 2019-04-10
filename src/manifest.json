@@ -30,7 +30,6 @@
         "actions" : {
           "Startup": "onStartup",
           "Shutdown": "onShutdown",
-          "MyPhoto": "onMyPhoto",
           "PhotoByUserID": "onPhotoByUserID",
           "MyFriends": "onMyFriends",
           "MyFriendsRandom": "onMyFriendsRandom",

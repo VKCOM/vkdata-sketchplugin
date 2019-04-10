@@ -99,8 +99,7 @@ export function logout () {
 }
 
 export function onStartup (context) {
-  DataSupplier.registerDataSupplier('public.image', 'Your Avatar', 'MyPhoto')
-  DataSupplier.registerDataSupplier('public.image', 'Avatar by..', 'PhotoByUserID')
+  DataSupplier.registerDataSupplier('public.image', 'Your Avatar or..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Random', 'MyFriendsRandom')
   DataSupplier.registerDataSupplier('public.image', 'Groups: Hints', 'MyGroups')
@@ -137,45 +136,19 @@ export function onShutdown () {
   }
 }
 
-export function onMyPhoto (context) {
-  getData('users.get', {
-    'user_ids': USER_ID,
-    'fields': 'photo_200,photo_100',
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-    .then(response => {
-      let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        let layer = item
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        }
-
-        if (!isEmpty(response[0].photo_200)) {
-          process(response[0].photo_200, dataKey, index, item)
-        } else if (!isEmpty(response[0].photo_100)) {
-          process(response[0].photo_100, dataKey, index, item)
-        } else {
-          sendEvent('Error', 'My Avatar', 'No avatars')
-        }
-
-        sendEvent('User', 'Avatar', null)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-      sendEvent('Error', 'My Avatar', error)
-    })
-}
-
 export function onPhotoByUserID (context) {
-  let ownerId = UI.getStringFromUser('Введите ID нужных людей..', USER_ID).replace(' ', '-').toLowerCase()
+  let ownerId
+  UI.getInputFromUser(
+    'Enter Account ID of vk.com', { initialValue: USER_ID },
+    (error, value) => {
+      if (error) {
+        UI.message('Something went wrong')
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+      }
+    }
+  )
   let requestedCount = context.data.requestedCount
   if (ownerId !== 'null') {
     getData('users.get', {
@@ -483,7 +456,18 @@ export function onMyGroupsNames (context) {
 
 export function onVideoByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  let ownerId
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
+    (error, value) => {
+      if (error) {
+        UI.message('Something went wrong')
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+      }
+    }
+  )
   if (ownerId !== 'null') {
     getData('video.get', {
       'owner_id': ownerId,
@@ -530,7 +514,18 @@ export function onVideoByOwnerID (context) {
 
 export function onVideoTitleByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  let ownerId
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
+    (error, value) => {
+      if (error) {
+        UI.message('Something went wrong')
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+      }
+    }
+  )
   if (ownerId !== 'null') {
     getData('video.get', {
       'owner_id': ownerId,
@@ -575,7 +570,18 @@ export function onVideoTitleByOwnerID (context) {
 
 export function onVideoViewsByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId = UI.getStringFromUser('Введите ID автора видео..', USER_ID).replace(' ', '-').toLowerCase()
+  let ownerId
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
+    (error, value) => {
+      if (error) {
+        UI.message('Something went wrong')
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+      }
+    }
+  )
   if (ownerId !== 'null') {
     getData('video.get', {
       'owner_id': ownerId,
