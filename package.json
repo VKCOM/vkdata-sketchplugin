@@ -19,10 +19,10 @@
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.5.16",
+    "@skpm/builder": "^0.6.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-import": "^2.17.2",
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.1.1",
     "eslint-plugin-standard": "^4.0.0"
@@ -34,8 +34,9 @@
     "@skpm/extract-loader": "^2.0.2",
     "@skpm/fs": "^0.2.4",
     "mocha-js-delegate": "^0.1.1",
-    "sketch-module-google-analytics": "^0.2.0",
-    "skpm": "^1.1.15"
+    "sketch-module-google-analytics": "^0.2.1",
+    "sketch-module-web-view": "^3.0.1",
+    "skpm": "^1.2.0"
   },
   "licence": "MIT",
   "repository": {

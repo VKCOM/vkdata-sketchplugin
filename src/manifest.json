@@ -14,7 +14,7 @@
   "commands": [
     {
       "name": "Auth Check",
-      "identifier": "authcheck",
+      "identifier": "checkauth",
       "script": "./common.js",
       "handler": "checkauth"
     },
@@ -51,7 +51,7 @@
   ],
   "menu": {
     "items": [
-      "authcheck",
+      "checkauth",
       "-",
       "logout"
     ]

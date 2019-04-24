@@ -3,8 +3,8 @@ const util = require('util')
 const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
-const MochaJSDelegate = require('mocha-js-delegate')
 const track = require('sketch-module-google-analytics')
+const BrowserWindow = require('sketch-module-web-view')
 
 const {
   DataSupplier,
@@ -24,10 +24,8 @@ const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
 const ACCESS_TOKEN = Settings.settingForKey('ACCESS_TOKEN')
 const USER_ID = Settings.settingForKey('USER_ID')
 
-const isDEV = false
-
-export function checkauth () {
-  if (Settings.settingForKey('ACCESS_TOKEN') === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV === true) {
+export function checkauth (context) {
+  if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
     UI.message('You can use the plugin')
@@ -42,19 +40,20 @@ function sendEvent (category, action, value) {
   })
 }
 
-function auth () {
+/*function auth () {
   let URL = `https://oauth.vk.com/authorize?client_id=${APP_ID}&display=page&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=token&v=${API_VERSION}`
   let request = NSURLRequest.requestWithURL(NSURL.URLWithString(URL))
-
   let script = COScript.currentCOScript()
   script.setShouldKeepAround_(true)
-  let frame = NSMakeRect(0, 0, 800, 600)
 
+  let frame = NSMakeRect(0, 0, 800, 600)
   let cfg = WKWebViewConfiguration.alloc().init()
   cfg.setWebsiteDataStore(WKWebsiteDataStore.nonPersistentDataStore())
+
   let webView = WKWebView.alloc().initWithFrame_configuration(frame, cfg)
   let mask = NSTitledWindowMask + NSClosableWindowMask
   let panel = NSPanel.alloc().initWithContentRect_styleMask_backing_defer(frame, mask, NSBackingStoreBuffered, true)
+
   let delegate = new MochaJSDelegate({
     'webView:didCommitNavigation:': function (webView) {
       let components = NSURLComponents.componentsWithURL_resolvingAgainstBaseURL(webView.URL(), false)
@@ -81,7 +80,7 @@ function auth () {
           script.setShouldKeepAround_(false)
         }
       }
-    }
+    },
   })
 
   webView.setNavigationDelegate(delegate.getClassInstance())
@@ -89,9 +88,29 @@ function auth () {
   panel.contentView().addSubview(webView)
   panel.makeKeyAndOrderFront(null)
   panel.center()
+}*/
+
+function auth () {
+  let URL = `https://oauth.vk.com/authorize?client_id=${APP_ID}&display=page&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=token&v=${API_VERSION}`
+
+  let options = {
+    identifier: 'vk.browser',
+    width: 800,
+    height: 600,
+    frame: true,
+    transparent: false,
+    backgroundColor: '#FFFFFF'
+  }
+  let browserWindow = new BrowserWindow(options)
+
+  browserWindow.loadURL(URL)
+
+  let contents = browserWindow.webContents
+  console.log(contents.getURL())
+  console.log(contents.getTitle())
 }
 
-export function logout () {
+export function logout (context) {
   Settings.setSettingForKey('ACCESS_TOKEN', undefined)
   Settings.setSettingForKey('USER_ID', undefined)
   Settings.setSettingForKey('SCOPE_KEY', undefined)
@@ -122,10 +141,10 @@ export function onStartup (context) {
       'v': API_VERSION
     })
   }
-  sendEvent('Launch Sketch', null, null)
+  sendEvent('Launch Sketch')
 }
 
-export function onShutdown () {
+export function onShutdown (context) {
   Settings.setSettingForKey('RandomID', undefined)
   Settings.setSettingForKey('RandomGroupsID', undefined)
   DataSupplier.deregisterDataSuppliers()
@@ -925,7 +944,7 @@ export function onMyGroupsNamesRandom (context) {
 }
 
 function getData (method, options) {
-  if (Settings.settingForKey('ACCESS_TOKEN') === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE || isDEV === true) {
+  if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
     return new Promise(function (resolve, reject) {
@@ -941,6 +960,7 @@ function getData (method, options) {
         .catch(error => resolve(error))
     })
   }
+  console.log(ACCESS_TOKEN)
 }
 
 function isEmpty (obj) {
