@@ -4,7 +4,7 @@ const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
 const track = require('sketch-module-google-analytics')
-const BrowserWindow = require('sketch-module-web-view')
+const MochaJSDelegate = require('mocha-js-delegate')
 
 const {
   DataSupplier,
@@ -24,7 +24,7 @@ const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
 const ACCESS_TOKEN = Settings.settingForKey('ACCESS_TOKEN')
 const USER_ID = Settings.settingForKey('USER_ID')
 
-export function checkauth (context) {
+export function checkauth () {
   if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
@@ -40,28 +40,42 @@ function sendEvent (category, action, value) {
   })
 }
 
-/*function auth () {
-  let URL = `https://oauth.vk.com/authorize?client_id=${APP_ID}&display=page&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=token&v=${API_VERSION}`
-  let request = NSURLRequest.requestWithURL(NSURL.URLWithString(URL))
-  let script = COScript.currentCOScript()
-  script.setShouldKeepAround_(true)
+function auth () {
+  let authURL = 'https://oauth.vk.com/authorize?client_id=' + APP_ID + '&display=page&redirect_uri=' + REDIRECT_URI + '&scope=' + SCOPE + '&response_type=token&v=' + API_VERSION
+  let panelWidth = 800
+  let panelHeight = 600
 
-  let frame = NSMakeRect(0, 0, 800, 600)
-  let cfg = WKWebViewConfiguration.alloc().init()
-  cfg.setWebsiteDataStore(WKWebsiteDataStore.nonPersistentDataStore())
-
-  let webView = WKWebView.alloc().initWithFrame_configuration(frame, cfg)
+  let fiber = sketch.Async.createFiber()
+  let frame = NSMakeRect(0, 0, panelWidth, panelHeight)
   let mask = NSTitledWindowMask + NSClosableWindowMask
   let panel = NSPanel.alloc().initWithContentRect_styleMask_backing_defer(frame, mask, NSBackingStoreBuffered, true)
+
+  panel.setBackgroundColor(NSColor.whiteColor())
+
+  panel.title = 'VK Data Plugin'
+  panel.titlebarAppearsTransparent = false
+
+  panel.center()
+  panel.becomeKeyWindow()
+  panel.makeKeyAndOrderFront(null)
+
+  panel.standardWindowButton(NSWindowMiniaturizeButton).setHidden(true)
+  panel.standardWindowButton(NSWindowZoomButton).setHidden(true)
+
+  let config = WKWebViewConfiguration.alloc().init()
+  config.setWebsiteDataStore(WKWebsiteDataStore.nonPersistentDataStore())
+
+  let webView = WKWebView.alloc().initWithFrame_configuration(frame, config)
+  let request = NSURLRequest.requestWithURL(NSURL.URLWithString(authURL))
 
   let delegate = new MochaJSDelegate({
     'webView:didCommitNavigation:': function (webView) {
       let components = NSURLComponents.componentsWithURL_resolvingAgainstBaseURL(webView.URL(), false)
-      if (components.path() === '/blank.html') {
+      // eslint-disable-next-line eqeqeq
+      if (components.path() == '/blank.html') {
         let fragment = components.fragment()
         let url = NSURL.URLWithString('https://vk.com/?' + String(fragment))
         let queryItems = NSURLComponents.componentsWithURL_resolvingAgainstBaseURL(url, false).queryItems()
-
         let values = queryItems.reduce(function (prev, item) {
           prev[String(item.name())] = String(item.value())
           return prev
@@ -70,44 +84,21 @@ function sendEvent (category, action, value) {
         let token = values['access_token']
         let userId = values['user_id']
 
-        if (token !== undefined && userId !== undefined) {
+        if (token.length > 0) {
           Settings.setSettingForKey('ACCESS_TOKEN', token)
           Settings.setSettingForKey('USER_ID', userId)
           Settings.setSettingForKey('SCOPE_KEY', SCOPE)
 
-          UI.message('Success')
           panel.close()
-          script.setShouldKeepAround_(false)
+          fiber.cleanup()
         }
       }
-    },
+    }
   })
 
   webView.setNavigationDelegate(delegate.getClassInstance())
   webView.loadRequest(request)
   panel.contentView().addSubview(webView)
-  panel.makeKeyAndOrderFront(null)
-  panel.center()
-}*/
-
-function auth () {
-  let URL = `https://oauth.vk.com/authorize?client_id=${APP_ID}&display=page&redirect_uri=${REDIRECT_URI}&scope=${SCOPE}&response_type=token&v=${API_VERSION}`
-
-  let options = {
-    identifier: 'vk.browser',
-    width: 800,
-    height: 600,
-    frame: true,
-    transparent: false,
-    backgroundColor: '#FFFFFF'
-  }
-  let browserWindow = new BrowserWindow(options)
-
-  browserWindow.loadURL(URL)
-
-  let contents = browserWindow.webContents
-  console.log(contents.getURL())
-  console.log(contents.getTitle())
 }
 
 export function logout (context) {
@@ -145,8 +136,6 @@ export function onStartup (context) {
 }
 
 export function onShutdown (context) {
-  Settings.setSettingForKey('RandomID', undefined)
-  Settings.setSettingForKey('RandomGroupsID', undefined)
   DataSupplier.deregisterDataSuppliers()
   try {
     fs.rmdirSync(FOLDER)
@@ -156,62 +145,62 @@ export function onShutdown (context) {
 }
 
 export function onPhotoByUserID (context) {
-  let ownerId
-  UI.getInputFromUser(
-    'Enter Account ID of vk.com', { initialValue: USER_ID },
-    (error, value) => {
-      if (error) {
-        UI.message('Something went wrong')
-        sendEvent('Error', 'User Input', error)
-      } else {
-        ownerId = value
+  let recentTerm = Settings.sessionVariable('recentTermPhoto')
+  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  if (sketch.version.sketch > 53) {
+    UI.getInputFromUser(
+      'Enter Account ID of vk.com',
+      { initialValue: ownerId },
+      (error, value) => {
+        if (error) {
+          UI.message(error)
+          sendEvent('Error', 'User Input', error)
+        } else {
+          ownerId = value.trim()
+          Settings.setSessionVariable('recentTermPhoto', ownerId)
+        }
       }
-    }
-  )
-  let requestedCount = context.data.requestedCount
-  if (ownerId !== 'null') {
-    getData('users.get', {
-      'user_ids': ownerId,
-      'fields': 'photo_200,photo_100',
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          if (requestedCount > response.length) {
-            let diff = requestedCount - response.length
-            for (let i = 0; i < diff; i++) {
-              response.push(response[i])
-            }
-          }
-
-          if (!isEmpty(response[index].photo_200)) {
-            process(response[index].photo_200, dataKey, index, item)
-          } else {
-            process(response[index].photo_100, dataKey, index, item)
-          }
-
-          sendEvent('Friends', 'By User ID', null)
-        })
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendEvent('Error', 'By User ID', error)
-      })
+    )
+  } else {
+    UI.message('Please update your Sketch to use with plugin')
   }
+
+  let requestedCount = context.data.requestedCount
+  getData('users.get', {
+    'user_ids': ownerId,
+    'fields': 'photo_200,photo_100',
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+
+        if (requestedCount > response.length) {
+          let diff = requestedCount - response.length
+          for (let i = 0; i < diff; i++) {
+            response.push(response[i])
+          }
+        }
+
+        if (!isEmpty(response[index].photo_200)) {
+          process(response[index].photo_200, dataKey, index, item)
+        } else {
+          process(response[index].photo_100, dataKey, index, item)
+        }
+
+        sendEvent('Friends', 'By User ID', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'By User ID', error)
+    })
 }
 
 export function onMyFriends (context) {
@@ -226,16 +215,10 @@ export function onMyFriends (context) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         if (!isEmpty(response['items'][index].photo_200)) {
@@ -265,16 +248,10 @@ export function onMyGroups (context) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         if (!isEmpty(response['items'][index].photo_200)) {
@@ -305,19 +282,13 @@ export function onMyFriendsFirstNames (context) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
-        }
-        DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
 
+        DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
         sendEvent('Friends', 'First Names', null)
       })
     })
@@ -340,16 +311,10 @@ export function onMyFriendsLastNames (context) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
         DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].last_name, index)
 
@@ -375,16 +340,10 @@ export function onMyFriendsFullNames (context) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
         let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
@@ -410,16 +369,8 @@ export function onMyName (context) {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
-
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         let fullName = response[0].first_name + ' ' + response[0].last_name
@@ -448,16 +399,8 @@ export function onMyGroupsNames (context) {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
-        let layer
-
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         let name = response['items'][index].name
@@ -475,172 +418,160 @@ export function onMyGroupsNames (context) {
 
 export function onVideoByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId
-  UI.getInputFromUser(
-    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
-    (error, value) => {
-      if (error) {
-        UI.message('Something went wrong')
-        sendEvent('Error', 'User Input', error)
-      } else {
-        ownerId = value
+  let recentTerm = Settings.sessionVariable('recentTermVideo')
+  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  if (sketch.version.sketch > 53) {
+    UI.getInputFromUser(
+      'Enter Video Author ID of vk.com',
+      { initialValue: ownerId },
+      (error, value) => {
+        if (error) {
+          UI.message(error)
+          sendEvent('Error', 'User Input', error)
+        } else {
+          ownerId = value
+          Settings.setSessionVariable('recentTermVideo', ownerId)
+        }
       }
-    }
-  )
-  if (ownerId !== 'null') {
-    getData('video.get', {
-      'owner_id': ownerId,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          if (!isEmpty(response['items'][index].photo_1280)) {
-            process(response['items'][index].photo_1280, dataKey, index, item)
-          } else if (!isEmpty(response['items'][index].photo_800)) {
-            process(response['items'][index].photo_800, dataKey, index, item)
-          } else if (!isEmpty(response['items'][index].photo_640)) {
-            process(response['items'][index].photo_640, dataKey, index, item)
-          } else if (!isEmpty(response['items'][index].photo_320)) {
-            process(response['items'][index].photo_320, dataKey, index, item)
-          } else {
-            process(response['items'][index].photo_130, dataKey, index, item)
-          }
-
-          sendEvent('Video', 'Thumbnails', null)
-        })
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendEvent('Error', 'Video', 'Thumbnails: ' + error)
-      })
+    )
   }
+  getData('video.get', {
+    'owner_id': ownerId,
+    'count': selection,
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+        (!isEmpty(response['items'][index].photo_1280)) ? process(response['items'][index].photo_1280, dataKey, index, item)
+          : (!isEmpty(response['items'][index].photo_800)) ? process(response['items'][index].photo_800, dataKey, index, item)
+            : (!isEmpty(response['items'][index].photo_640)) ? process(response['items'][index].photo_640, dataKey, index, item)
+              : (!isEmpty(response['items'][index].photo_320)) ? process(response['items'][index].photo_320, dataKey, index, item)
+                : process(response['items'][index].photo_130, dataKey, index, item)
+
+        sendEvent('Video', 'Thumbnails', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Video', 'Thumbnails: ' + error)
+    })
 }
 
 export function onVideoTitleByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId
-  UI.getInputFromUser(
-    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
-    (error, value) => {
-      if (error) {
-        UI.message('Something went wrong')
-        sendEvent('Error', 'User Input', error)
-      } else {
-        ownerId = value
+  let recentTerm = Settings.sessionVariable('recentTermVideo')
+  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  if (sketch.version.sketch > 53) {
+    UI.getInputFromUser(
+      'Enter Video Author ID of vk.com',
+      { initialValue: ownerId },
+      (error, value) => {
+        if (error) {
+          UI.message(error)
+          sendEvent('Error', 'User Input', error)
+        } else {
+          ownerId = value
+          Settings.setSessionVariable('recentTermVideo', ownerId)
+        }
       }
-    }
-  )
-  if (ownerId !== 'null') {
-    getData('video.get', {
-      'owner_id': ownerId,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          if (selection > response['items'].length) {
-            let diff = selection - response['items'].length
-            for (let i = 0; i < diff; i++) {
-              response['items'].push(response['items'][i])
-            }
-          }
-
-          let name = response['items'][index].title
-          DataSupplier.supplyDataAtIndex(dataKey, name, index)
-
-          sendEvent('Video', 'Title', null)
-        })
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendEvent('Error', 'Video', 'Title: ' + error)
-      })
+    )
+  } else {
+    UI.message('Please update your Sketch to use with plugin')
   }
+  getData('video.get', {
+    'owner_id': ownerId,
+    'count': selection,
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+
+        if (selection > response['items'].length) {
+          let diff = selection - response['items'].length
+          for (let i = 0; i < diff; i++) {
+            response['items'].push(response['items'][i])
+          }
+        }
+
+        let name = response['items'][index].title
+        DataSupplier.supplyDataAtIndex(dataKey, name, index)
+
+        sendEvent('Video', 'Title', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Video', 'Title: ' + error)
+    })
 }
 
 export function onVideoViewsByOwnerID (context) {
   let selection = context.data.requestedCount
-  let ownerId
-  UI.getInputFromUser(
-    'Enter Video Author ID of vk.com', { initialValue: USER_ID },
-    (error, value) => {
-      if (error) {
-        UI.message('Something went wrong')
-        sendEvent('Error', 'User Input', error)
-      } else {
-        ownerId = value
+  let recentTerm = Settings.sessionVariable('recentTermVideo')
+  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  if (sketch.version.sketch > 53) {
+    UI.getInputFromUser(
+      'Enter Video Author ID of vk.com',
+      { initialValue: ownerId },
+      (error, value) => {
+        if (error) {
+          UI.message(error)
+          sendEvent('Error', 'User Input', error)
+        } else {
+          ownerId = value
+          Settings.setSessionVariable('recentTermVideo', ownerId)
+        }
       }
-    }
-  )
-  if (ownerId !== 'null') {
-    getData('video.get', {
-      'owner_id': ownerId,
-      'count': selection,
-      'access_token': ACCESS_TOKEN,
-      'v': API_VERSION
-    })
-      .then(response => {
-        let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
-        items.forEach((item, index) => {
-          let layer
-          if (!item.type) {
-            item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
-
-          let views = response['items'][index].views
-          views = views + ' просмотров'
-          DataSupplier.supplyDataAtIndex(dataKey, views, index)
-
-          sendEvent('Video', 'Views', null)
-        })
-      })
-      .catch(error => {
-        UI.message('Something went wrong')
-        console.error(error)
-        sendEvent('Error', 'Video', 'Vides: ' + error)
-      })
+    )
+  } else {
+    UI.message('Please update your Sketch to use with plugin')
   }
+  getData('video.get', {
+    'owner_id': ownerId,
+    'count': selection,
+    'access_token': ACCESS_TOKEN,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) {
+          item = sketch.Shape.fromNative(item.sketchObject)
+        }
+
+        let views = response['items'][index].views
+        views = views + ' просмотров'
+        DataSupplier.supplyDataAtIndex(dataKey, views, index)
+
+        sendEvent('Video', 'Views', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Video', 'Video: ' + error)
+    })
 }
 
 export function onMyFriendsRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomID') === undefined) {
+  if ((Settings.sessionVariable('RandomID') === undefined) || (Settings.sessionVariable('RandomType') === 'Image')) {
     getData('friends.get', {
       'user_id': USER_ID,
       'order': 'random',
@@ -651,22 +582,17 @@ export function onMyFriendsRandom (context) {
     })
       .then(response => {
         let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        let items = util.toArray(context.data.items).map(sketch.fromNative)
 
         let arr = []
         for (let i = 0; i < selection; i++) {
           arr.splice(i, 0, String(response['items'][i].id))
         }
-        Settings.setSettingForKey('RandomID', arr)
+        Settings.setSessionVariable('RandomID', arr)
+        Settings.setSessionVariable('RandomType', 'Image')
         items.forEach((item, index) => {
-          let layer
           if (!item.type) {
             item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
           }
 
           if (!isEmpty(response['items'][index].photo_200)) {
@@ -685,7 +611,7 @@ export function onMyFriendsRandom (context) {
         sendEvent('Error', 'Friends', 'Random, No Cookies: ')
       })
   } else {
-    let userids = Settings.settingForKey('RandomID').join(',')
+    let userids = Settings.sessionVariable('RandomID').join(',')
     getData('users.get', {
       'user_ids': userids,
       'fields': 'photo_200,photo_100',
@@ -693,21 +619,14 @@ export function onMyFriendsRandom (context) {
       'v': API_VERSION
     })
       .then(response => {
-        // console.log(String(JSON.stringify(response)))
         let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        let items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
-          let layer
           if (!item.type) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
 
-          if (!isEmpty(response[index].photo_200)) {
+          if (!isEmpty(response[index].photo_200) !== 0) {
             process(response[index].photo_200, dataKey, index, item)
           } else {
             process(response[index].photo_100, dataKey, index, item)
@@ -721,14 +640,14 @@ export function onMyFriendsRandom (context) {
         console.error(error)
         sendEvent('Error', 'Friends', 'Random, Cookies: ' + error)
       })
-    Settings.setSettingForKey('RandomID', undefined)
+    Settings.setSessionVariable('RandomID', undefined)
   }
 }
 
 export function onMyFriendsNamesRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomID') === undefined) {
+  if ((Settings.sessionVariable('RandomID') === undefined) || (Settings.sessionVariable('RandomType') === 'Text')) {
     getData('friends.get', {
       'user_id': USER_ID,
       'order': 'random',
@@ -739,23 +658,18 @@ export function onMyFriendsNamesRandom (context) {
     })
       .then(response => {
         let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        let items = util.toArray(context.data.items).map(sketch.fromNative)
 
         let arr = []
         for (let i = 0; i < selection; i++) {
           arr.splice(i, 0, String(response['items'][i].id))
         }
-        Settings.setSettingForKey('RandomID', arr)
+        Settings.setSessionVariable('RandomID', arr)
+        Settings.setSessionVariable('RandomType', 'Text')
 
         items.forEach((item, index) => {
-          let layer
           if (!item.type) {
             item = sketch.Shape.fromNative(item.sketchObject)
-          }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
           }
 
           let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
@@ -771,7 +685,7 @@ export function onMyFriendsNamesRandom (context) {
         sendEvent('Error', 'Friends', 'Random Names, No Cookies' + error)
       })
   } else {
-    let userids = Settings.settingForKey('RandomID').join(',')
+    let userids = Settings.sessionVariable('RandomID').join(',')
     getData('users.get', {
       'user_ids': userids,
       'fields': 'first_name,last_name',
@@ -780,17 +694,12 @@ export function onMyFriendsNamesRandom (context) {
     })
       .then(response => {
         let dataKey = context.data.key
-        const items = util.toArray(context.data.items).map(sketch.fromNative)
+        let items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
-          let layer
           if (!item.type) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
-          if (item.type === 'DataOverride') {
-            layer = item.symbolInstance
-          } else {
-            layer = item
-          }
+
           let fullName = response[index].first_name + ' ' + response[index].last_name
           DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
         })
@@ -802,7 +711,7 @@ export function onMyFriendsNamesRandom (context) {
         console.error(error)
         sendEvent('Error', 'Friends', 'Random Names, Cookies' + error)
       })
-    Settings.setSettingForKey('RandomID', undefined)
+    Settings.setSessionVariable('RandomID', undefined)
   }
 }
 
@@ -814,17 +723,11 @@ function GroupsRandom (context, array) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
 
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         if (!isEmpty(response[index].photo_200)) {
@@ -845,7 +748,7 @@ function GroupsRandom (context, array) {
 export function onMyGroupsRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomGroupsID') === undefined) {
+  if ((Settings.sessionVariable('RandomGroupsID') === undefined) || (Settings.sessionVariable('RandomGroupsType') === 'Image')) {
     getData('groups.get', {
       'user_id': USER_ID,
       'access_token': ACCESS_TOKEN,
@@ -862,7 +765,8 @@ export function onMyGroupsRandom (context) {
 
         GroupsRandom(context, arrRand)
         UI.message('Now you can add names in Groups: Random')
-        Settings.setSettingForKey('RandomGroupsID', arrRand)
+        Settings.setSessionVariable('RandomGroupsID', arrRand)
+        Settings.setSessionVariable('RandomGroupsType', 'Image')
       })
       .catch(error => {
         UI.message('Something went wrong')
@@ -870,9 +774,9 @@ export function onMyGroupsRandom (context) {
         sendEvent('Error', 'Groups', 'Random 2: ' + error)
       })
   } else {
-    let ids = Settings.settingForKey('RandomGroupsID')
+    let ids = Settings.sessionVariable('RandomGroupsID')
     GroupsRandom(context, ids)
-    Settings.setSettingForKey('RandomGroupsID', undefined)
+    Settings.setSessionVariable('RandomGroupsID', undefined)
   }
 }
 
@@ -884,17 +788,11 @@ function GroupsNamesRandom (context, array) {
   })
     .then(response => {
       let dataKey = context.data.key
-      const items = util.toArray(context.data.items).map(sketch.fromNative)
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
 
       items.forEach((item, index) => {
-        let layer
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (item.type === 'DataOverride') {
-          layer = item.symbolInstance
-        } else {
-          layer = item
         }
 
         let name = response[index].name
@@ -912,7 +810,7 @@ function GroupsNamesRandom (context, array) {
 export function onMyGroupsNamesRandom (context) {
   let selection = context.data.requestedCount
 
-  if (Settings.settingForKey('RandomGroupsID') === undefined) {
+  if ((Settings.sessionVariable('RandomGroupsID') === undefined) || (Settings.sessionVariable('RandomGroupsType') === 'Text')) {
     getData('groups.get', {
       'user_id': USER_ID,
       'access_token': ACCESS_TOKEN,
@@ -929,7 +827,8 @@ export function onMyGroupsNamesRandom (context) {
 
         GroupsNamesRandom(context, arrRand)
         UI.message('Now you can add avatars in Groups: Random')
-        Settings.setSettingForKey('RandomGroupsID', arrRand)
+        Settings.setSessionVariable('RandomGroupsID', arrRand)
+        Settings.setSessionVariable('RandomGroupsType', 'Text')
       })
       .catch(error => {
         UI.message('Something went wrong')
@@ -937,14 +836,14 @@ export function onMyGroupsNamesRandom (context) {
         sendEvent('Error', 'Groups', 'Random Names 2: ' + error)
       })
   } else {
-    let ids = Settings.settingForKey('RandomGroupsID')
+    let ids = Settings.sessionVariable('RandomGroupsID')
     GroupsNamesRandom(context, ids)
-    Settings.setSettingForKey('RandomGroupsID', undefined)
+    Settings.setSessionVariable('RandomGroupsID', undefined)
   }
 }
 
 function getData (method, options) {
-  if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
+  if (ACCESS_TOKEN.length <= 0 || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
     return new Promise(function (resolve, reject) {
@@ -960,7 +859,6 @@ function getData (method, options) {
         .catch(error => resolve(error))
     })
   }
-  console.log(ACCESS_TOKEN)
 }
 
 function isEmpty (obj) {
@@ -990,6 +888,8 @@ function shuffle (array) {
 function process (data, dataKey, index, item) {
   return getImageFromURL(data).then(imagePath => {
     if (!imagePath) {
+      UI.message('Something wrong happened')
+      sendEvent('Error', 'Main', 'Process')
       return
     }
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
@@ -1020,12 +920,14 @@ function saveTempFileFromImageData (imageData) {
     fs.mkdirSync(FOLDER)
   } catch (err) {
     // probably because the folder already exists
+    sendEvent('Error', 'Main', 'SaveTempFileFromImageData')
   }
   try {
     fs.writeFileSync(imagePath, imageData, 'NSData')
     return imagePath
   } catch (err) {
     console.error(err)
+    sendEvent('Error', 'Main', 'ImagePath: ' + err)
     return undefined
   }
 }

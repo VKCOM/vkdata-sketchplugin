@@ -13,16 +13,20 @@
   "suppliesData" : true,
   "commands": [
     {
-      "name": "Auth Check",
-      "identifier": "checkauth",
+      "name": "VK Auth",
+      "identifier": "vk.auth",
       "script": "./common.js",
-      "handler": "checkauth"
+      "handler": "checkauth",
+      "icon": "./icon64.png",
+      "iconDark": ".icon64.png"
     },
     {
       "name": "Logout",
-      "identifier": "logout",
+      "identifier": "vk.logout",
       "script": "./common.js",
-      "handler": "logout"
+      "handler": "logout",
+      "icon": "./icon64.png",
+      "iconDark": ".icon64.png"
     },
     {
       "script" : "./common.js",
@@ -46,7 +50,9 @@
           "MyGroupsRandom": "onMyGroupsRandom",
           "MyGroupsNamesRandom": "onMyGroupsNamesRandom"
         }
-      }
+      },
+      "icon": "./icon64.png",
+      "iconDark": ".icon64.png"
     }
   ],
   "menu": {
