@@ -57,9 +57,9 @@
   ],
   "menu": {
     "items": [
-      "checkauth",
+      "vk.auth",
       "-",
-      "logout"
+      "vk.logout"
     ]
   }
 }
