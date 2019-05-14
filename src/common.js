@@ -33,11 +33,11 @@ export function checkauth () {
 }
 
 function sendEvent (category, action, value) {
-  track('UA-130190471-1', 'event', {
+  let analytics = track('UA-130190471-1', 'event', {
     ec: category, // the event category
-    ea: action, // the event action
-    ev: value // the event value
+    ea: action + ' ' + value // the event action
   })
+  return analytics
 }
 
 function auth () {
