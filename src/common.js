@@ -920,7 +920,7 @@ function saveTempFileFromImageData (imageData) {
     fs.mkdirSync(FOLDER)
   } catch (err) {
     // probably because the folder already exists
-    sendEvent('Error', 'Main', 'SaveTempFileFromImageData')
+    sendEvent('Error', 'Main', 'SaveTempFileFromImageData' + err)
   }
   try {
     fs.writeFileSync(imagePath, imageData, 'NSData')

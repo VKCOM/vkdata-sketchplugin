@@ -20,11 +20,11 @@
   },
   "devDependencies": {
     "@skpm/builder": "^0.7.0",
-    "eslint": "^5.16.0",
+    "eslint": "^6.0.1",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.17.2",
-    "eslint-plugin-node": "^9.0.1",
-    "eslint-plugin-promise": "^4.1.1",
+    "eslint-plugin-import": "^2.18.0",
+    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0"
   },
   "resources": [
@@ -32,7 +32,7 @@
   ],
   "dependencies": {
     "@skpm/extract-loader": "^2.0.2",
-    "@skpm/fs": "^0.2.4",
+    "@skpm/fs": "^0.2.5",
     "mocha-js-delegate": "^0.2.0",
     "sketch-module-google-analytics": "^0.2.1",
     "skpm": "^1.2.0"
