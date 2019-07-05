@@ -3,7 +3,7 @@ const util = require('util')
 const os = require('os')
 const path = require('path')
 const fs = require('@skpm/fs')
-const track = require('sketch-module-google-analytics')
+const track = require('./analytics.js')
 const MochaJSDelegate = require('mocha-js-delegate')
 
 const {
@@ -16,7 +16,8 @@ const APP_ID = '6742961'
 const REDIRECT_URI = 'https://oauth.vk.com/blank.html'
 const SCOPE = 'offline,friends,groups,video'
 const API_URI = 'https://api.vk.com/method/'
-const API_VERSION = '5.92'
+const API_VERSION = '5.101'
+const DEBUG_MODE = false
 
 const SETTING_KEY = 'vk.photo.id'
 const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
@@ -36,12 +37,13 @@ function sendEvent (category, action, value) {
   let analytics = track('UA-130190471-1', 'event', {
     ec: category, // the event category
     ea: action + ' ' + value // the event action
-  })
+  }, { debug: DEBUG_MODE })
+  if (DEBUG_MODE) console.log(analytics)
   return analytics
 }
 
 function auth () {
-  let authURL = 'https://oauth.vk.com/authorize?client_id=' + APP_ID + '&display=page&redirect_uri=' + REDIRECT_URI + '&scope=' + SCOPE + '&response_type=token&v=' + API_VERSION
+  let authURL = 'https://oauth.vk.com/authorize?client_id=' + APP_ID + '&display=page&redirect_uri=' + REDIRECT_URI + '&scope=' + SCOPE + '&response_type=token&v=' + API_VERSION + '&revoke=1'
   let panelWidth = 800
   let panelHeight = 600
 
@@ -115,16 +117,20 @@ export function onStartup (context) {
   DataSupplier.registerDataSupplier('public.image', 'Groups: Hints', 'MyGroups')
   DataSupplier.registerDataSupplier('public.image', 'Groups: Random', 'MyGroupsRandom')
   DataSupplier.registerDataSupplier('public.image', 'Video by..', 'VideoByOwnerID')
+  DataSupplier.registerDataSupplier('public.image', 'Bookmarks: Users', 'BookmarksUsers')
+  DataSupplier.registerDataSupplier('public.image', 'Bookmarks: Groups', 'BookmarksGroups')
 
   DataSupplier.registerDataSupplier('public.text', 'Your Name', 'MyName')
-  DataSupplier.registerDataSupplier('public.text', 'Friends: First Name', 'MyFriendsFirstNames')
-  DataSupplier.registerDataSupplier('public.text', 'Friends: Last Name', 'MyFriendsLastNames')
-  DataSupplier.registerDataSupplier('public.text', 'Friends: Full Name', 'MyFriendsFullNames')
+  DataSupplier.registerDataSupplier('public.text', 'Friends Hints: First Name', 'MyFriendsFirstNames')
+  DataSupplier.registerDataSupplier('public.text', 'Friends Hints: Last Name', 'MyFriendsLastNames')
+  DataSupplier.registerDataSupplier('public.text', 'Friends Hints: Full Name', 'MyFriendsFullNames')
   DataSupplier.registerDataSupplier('public.text', 'Friends: Random', 'MyFriendsNamesRandom')
   DataSupplier.registerDataSupplier('public.text', 'Groups: Hints', 'MyGroupsNames')
   DataSupplier.registerDataSupplier('public.text', 'Groups: Random', 'MyGroupsNamesRandom')
   DataSupplier.registerDataSupplier('public.text', 'Video Title by..', 'VideoTitleByOwnerID')
   DataSupplier.registerDataSupplier('public.text', 'Video Views by..', 'VideoViewsByOwnerID')
+  DataSupplier.registerDataSupplier('public.text', 'Bookmarks: Users', 'BookmarksUsersNames')
+  DataSupplier.registerDataSupplier('public.text', 'Bookmarks: Groups', 'BookmarksGroupsNames')
 
   if (ACCESS_TOKEN !== undefined) {
     getData('stats.trackVisitor', {
@@ -842,8 +848,122 @@ export function onMyGroupsNamesRandom (context) {
   }
 }
 
+export function onBookmarksUsers (context) {
+  let selection = context.data.requestedCount
+  getData('fave.getPages', {
+    'type': 'users',
+    'access_token': ACCESS_TOKEN,
+    'fields': 'photo_200,photo_100',
+    'count': selection,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
+
+        if (!isEmpty(response['items'][index]['user'].photo_200)) {
+          process(response['items'][index]['user'].photo_200, dataKey, index, item)
+        } else {
+          process(response['items'][index]['user'].photo_100, dataKey, index, item)
+        }
+
+        sendEvent('Bookmarks', 'Users', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Bookmarks', 'Users: ' + error)
+    })
+}
+
+export function onBookmarksUsersNames (context) {
+  let selection = context.data.requestedCount
+  getData('fave.getPages', {
+    'type': 'users',
+    'access_token': ACCESS_TOKEN,
+    'fields': 'photo_200,photo_100',
+    'count': selection,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
+        let fullName = response['items'][index]['user'].first_name + ' ' + response['items'][index]['user'].last_name
+        DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
+        sendEvent('Bookmarks', 'Users Names', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Bookmarks', 'Users Names: ' + error)
+    })
+}
+
+export function onBookmarksGroups (context) {
+  let selection = context.data.requestedCount
+  getData('fave.getPages', {
+    'type': 'groups',
+    'access_token': ACCESS_TOKEN,
+    'fields': 'photo_200,photo_100',
+    'count': selection,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
+
+        if (!isEmpty(response['items'][index]['group'].photo_200)) {
+          process(response['items'][index]['group'].photo_200, dataKey, index, item)
+        } else {
+          process(response['items'][index]['group'].photo_100, dataKey, index, item)
+        }
+
+        sendEvent('Bookmarks', 'Groups', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Bookmarks', 'Groups: ' + error)
+    })
+}
+
+export function onBookmarksGroupsNames (context) {
+  let selection = context.data.requestedCount
+  getData('fave.getPages', {
+    'type': 'groups',
+    'access_token': ACCESS_TOKEN,
+    'fields': 'photo_200,photo_100',
+    'count': selection,
+    'v': API_VERSION
+  })
+    .then(response => {
+      let dataKey = context.data.key
+      let items = util.toArray(context.data.items).map(sketch.fromNative)
+      items.forEach((item, index) => {
+        if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
+        let fullName = response['items'][index]['group'].name
+        DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
+        sendEvent('Bookmarks', 'Groups Names', null)
+      })
+    })
+    .catch(error => {
+      UI.message('Something went wrong')
+      console.error(error)
+      sendEvent('Error', 'Bookmarks', 'Groups Names: ' + error)
+    })
+}
+
 function getData (method, options) {
-  if (ACCESS_TOKEN.length <= 0 || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
+  if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
     return new Promise(function (resolve, reject) {
@@ -855,7 +975,16 @@ function getData (method, options) {
       let url = API_URI + method + '?' + query
       fetch(url)
         .then(response => response.json())
-        .then(json => resolve(json.response))
+        .then(json => {
+          resolve(json.response)
+          if (DEBUG_MODE) {
+            console.log(url)
+            console.log(USER_ID)
+            console.log(ACCESS_TOKEN)
+            console.log(Settings.settingForKey('SCOPE_KEY'))
+            console.log(json.response)
+          }
+        })
         .catch(error => resolve(error))
     })
   }
@@ -920,7 +1049,7 @@ function saveTempFileFromImageData (imageData) {
     fs.mkdirSync(FOLDER)
   } catch (err) {
     // probably because the folder already exists
-    sendEvent('Error', 'Main', 'SaveTempFileFromImageData' + err)
+    sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + err)
   }
   try {
     fs.writeFileSync(imagePath, imageData, 'NSData')

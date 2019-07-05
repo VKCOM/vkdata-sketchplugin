@@ -1,5 +1,7 @@
-# Dependency directories
-node_modules/
+# npm
+node_modules
+.npm
+npm-debug.log
 
 ### macOS ###
 # General
@@ -7,4 +9,8 @@ node_modules/
 .AppleDouble
 .LSOverride
 
+# build artifacts
 vkdata.sketchplugin
+
+# WebStorm
+.idea

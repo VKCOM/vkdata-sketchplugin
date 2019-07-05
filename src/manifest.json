@@ -1,12 +1,5 @@
 {
   "name": "💾 VK Data",
-  "author": "VK Design Team",
-  "authorEmail": "design@vk.com",
-  "description": "Plugin for work with the data of your page at vk.com",
-  "homepage": "https://github.com/VKCOM/vkdata-sketchplugin",
-  "bugs": {
-    "url": "https://github.com/VKCOM/vkdata-sketchplugin/issues"
-  },
   "compatibleVersion": 49,
   "bundleVersion": 1,
   "icon": "./icon.png",
@@ -48,7 +41,11 @@
           "VideoViewsByOwnerID": "onVideoViewsByOwnerID",
           "MyFriendsNamesRandom": "onMyFriendsNamesRandom",
           "MyGroupsRandom": "onMyGroupsRandom",
-          "MyGroupsNamesRandom": "onMyGroupsNamesRandom"
+          "MyGroupsNamesRandom": "onMyGroupsNamesRandom",
+          "BookmarksUsers": "onBookmarksUsers",
+          "BookmarksUsersNames": "onBookmarksUsersNames",
+          "BookmarksGroups": "onBookmarksGroups",
+          "BookmarksGroupsNames": "onBookmarksGroupsNames"
         }
       },
       "icon": "./icon64.png",
