@@ -178,7 +178,7 @@ export function onPhotoByUserID (context) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -186,17 +186,16 @@ export function onPhotoByUserID (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        if (requestedCount > response.length) {
-          let diff = requestedCount - response.length
+        if (requestedCount > body.response.length) {
+          let diff = requestedCount - body.response.length
           for (let i = 0; i < diff; i++) {
-            response.push(response[i])
+            body.response.push(body.response[i])
           }
         }
-
-        if (!isEmpty(response[index].photo_200)) {
-          process(response[index].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response[index].photo_200)) {
+          process(body.response[index].photo_200, dataKey, index, item)
         } else {
-          process(response[index].photo_100, dataKey, index, item)
+          process(body.response[index].photo_100, dataKey, index, item)
         }
 
         sendEvent('Friends', 'By User ID', null)
@@ -219,7 +218,7 @@ export function onMyFriends (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -227,10 +226,10 @@ export function onMyFriends (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        if (!isEmpty(response['items'][index].photo_200)) {
-          process(response['items'][index].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response['items'][index].photo_200)) {
+          process(body.response['items'][index].photo_200, dataKey, index, item)
         } else {
-          process(response['items'][index].photo_100, dataKey, index, item)
+          process(body.response['items'][index].photo_100, dataKey, index, item)
         }
 
         sendEvent('Friends', 'Hints', null)
@@ -252,7 +251,7 @@ export function onMyGroups (context) {
     'extended': 1,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -260,10 +259,10 @@ export function onMyGroups (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        if (!isEmpty(response['items'][index].photo_200)) {
-          process(response['items'][index].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response['items'][index].photo_200)) {
+          process(body.response['items'][index].photo_200, dataKey, index, item)
         } else {
-          process(response['items'][index].photo_100, dataKey, index, item)
+          process(body.response['items'][index].photo_100, dataKey, index, item)
         }
 
         sendEvent('Groups', 'Avatar', null)
@@ -286,7 +285,7 @@ export function onMyFriendsFirstNames (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -294,7 +293,7 @@ export function onMyFriendsFirstNames (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].first_name, index)
+        DataSupplier.supplyDataAtIndex(dataKey, body.response['items'][index].first_name, index)
         sendEvent('Friends', 'First Names', null)
       })
     })
@@ -315,14 +314,14 @@ export function onMyFriendsLastNames (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
-        DataSupplier.supplyDataAtIndex(dataKey, response['items'][index].last_name, index)
+        DataSupplier.supplyDataAtIndex(dataKey, body.response['items'][index].last_name, index)
 
         sendEvent('Friends', 'Last Names', null)
       })
@@ -344,14 +343,14 @@ export function onMyFriendsFullNames (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
-        let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
+        let fullName = body.response['items'][index].first_name + ' ' + body.response['items'][index].last_name
         DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
 
         sendEvent('Friends', 'Full Names', null)
@@ -371,7 +370,7 @@ export function onMyName (context) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -379,7 +378,7 @@ export function onMyName (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        let fullName = response[0].first_name + ' ' + response[0].last_name
+        let fullName = body.response[0].first_name + ' ' + body.response[0].last_name
         DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
 
         sendEvent('User', 'Names', null)
@@ -401,7 +400,7 @@ export function onMyGroupsNames (context) {
     'extended': 1,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -409,7 +408,7 @@ export function onMyGroupsNames (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        let name = response['items'][index].name
+        let name = body.response['items'][index].name
         DataSupplier.supplyDataAtIndex(dataKey, name, index)
 
         sendEvent('Groups', 'Names', null)
@@ -447,18 +446,17 @@ export function onVideoByOwnerID (context) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
-        (!isEmpty(response['items'][index].photo_1280)) ? process(response['items'][index].photo_1280, dataKey, index, item)
-          : (!isEmpty(response['items'][index].photo_800)) ? process(response['items'][index].photo_800, dataKey, index, item)
-            : (!isEmpty(response['items'][index].photo_640)) ? process(response['items'][index].photo_640, dataKey, index, item)
-              : (!isEmpty(response['items'][index].photo_320)) ? process(response['items'][index].photo_320, dataKey, index, item)
-                : process(response['items'][index].photo_130, dataKey, index, item)
+        
+        let count = Object.keys(body.response['items'][index].image).length
+        count = count - 1
+        process(body.response['items'][index].image[count].url, dataKey, index, item)
 
         sendEvent('Video', 'Thumbnails', null)
       })
@@ -497,7 +495,7 @@ export function onVideoTitleByOwnerID (context) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -505,14 +503,14 @@ export function onVideoTitleByOwnerID (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        if (selection > response['items'].length) {
-          let diff = selection - response['items'].length
+        if (selection > body.response['items'].length) {
+          let diff = selection - body.response['items'].length
           for (let i = 0; i < diff; i++) {
-            response['items'].push(response['items'][i])
+            body.response['items'].push(body.response['items'][i])
           }
         }
 
-        let name = response['items'][index].title
+        let name = body.response['items'][index].title
         DataSupplier.supplyDataAtIndex(dataKey, name, index)
 
         sendEvent('Video', 'Title', null)
@@ -552,7 +550,7 @@ export function onVideoViewsByOwnerID (context) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
@@ -560,7 +558,7 @@ export function onVideoViewsByOwnerID (context) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        let views = response['items'][index].views
+        let views = body.response['items'][index].views
         views = views + ' просмотров'
         DataSupplier.supplyDataAtIndex(dataKey, views, index)
 
@@ -586,13 +584,13 @@ export function onMyFriendsRandom (context) {
       'count': selection,
       'v': API_VERSION
     })
-      .then(response => {
+      .then(body => {
         let dataKey = context.data.key
         let items = util.toArray(context.data.items).map(sketch.fromNative)
 
         let arr = []
         for (let i = 0; i < selection; i++) {
-          arr.splice(i, 0, String(response['items'][i].id))
+          arr.splice(i, 0, String(body.response['items'][i].id))
         }
         Settings.setSessionVariable('RandomID', arr)
         Settings.setSessionVariable('RandomType', 'Image')
@@ -601,10 +599,10 @@ export function onMyFriendsRandom (context) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
 
-          if (!isEmpty(response['items'][index].photo_200)) {
-            process(response['items'][index].photo_200, dataKey, index, item)
+          if (!isEmpty(body.response['items'][index].photo_200)) {
+            process(body.response['items'][index].photo_200, dataKey, index, item)
           } else {
-            process(response['items'][index].photo_100, dataKey, index, item)
+            process(body.response['items'][index].photo_100, dataKey, index, item)
           }
           UI.message('Now you can add names in Friends: Random')
 
@@ -624,7 +622,7 @@ export function onMyFriendsRandom (context) {
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
     })
-      .then(response => {
+      .then(body => {
         let dataKey = context.data.key
         let items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
@@ -632,10 +630,10 @@ export function onMyFriendsRandom (context) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
 
-          if (!isEmpty(response[index].photo_200) !== 0) {
-            process(response[index].photo_200, dataKey, index, item)
+          if (!isEmpty(body.response[index].photo_200) !== 0) {
+            process(body.response[index].photo_200, dataKey, index, item)
           } else {
-            process(response[index].photo_100, dataKey, index, item)
+            process(body.response[index].photo_100, dataKey, index, item)
           }
 
           sendEvent('Friends', 'Random', null)
@@ -662,13 +660,13 @@ export function onMyFriendsNamesRandom (context) {
       'count': selection,
       'v': API_VERSION
     })
-      .then(response => {
+      .then(body => {
         let dataKey = context.data.key
         let items = util.toArray(context.data.items).map(sketch.fromNative)
 
         let arr = []
         for (let i = 0; i < selection; i++) {
-          arr.splice(i, 0, String(response['items'][i].id))
+          arr.splice(i, 0, String(body.response['items'][i].id))
         }
         Settings.setSessionVariable('RandomID', arr)
         Settings.setSessionVariable('RandomType', 'Text')
@@ -678,7 +676,7 @@ export function onMyFriendsNamesRandom (context) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
 
-          let fullName = response['items'][index].first_name + ' ' + response['items'][index].last_name
+          let fullName = body.response['items'][index].first_name + ' ' + body.response['items'][index].last_name
           DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
           UI.message('Now you can add avatars in Friends: Random')
 
@@ -698,7 +696,7 @@ export function onMyFriendsNamesRandom (context) {
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
     })
-      .then(response => {
+      .then(body => {
         let dataKey = context.data.key
         let items = util.toArray(context.data.items).map(sketch.fromNative)
         items.forEach((item, index) => {
@@ -706,7 +704,7 @@ export function onMyFriendsNamesRandom (context) {
             item = sketch.Shape.fromNative(item.sketchObject)
           }
 
-          let fullName = response[index].first_name + ' ' + response[index].last_name
+          let fullName = body.response[index].first_name + ' ' + body.response[index].last_name
           DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
         })
 
@@ -727,7 +725,7 @@ function GroupsRandom (context, array) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
 
@@ -736,10 +734,10 @@ function GroupsRandom (context, array) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        if (!isEmpty(response[index].photo_200)) {
-          process(response[index].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response[index].photo_200)) {
+          process(body.response[index].photo_200, dataKey, index, item)
         } else {
-          process(response[index].photo_100, dataKey, index, item)
+          process(body.response[index].photo_100, dataKey, index, item)
         }
         sendEvent('Groups', 'Random', null)
       })
@@ -760,8 +758,8 @@ export function onMyGroupsRandom (context) {
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
     })
-      .then(response => {
-        let arr = response['items']
+      .then(body => {
+        let arr = body.response['items']
         arr = shuffle(arr)
 
         let arrRand = []
@@ -792,7 +790,7 @@ function GroupsNamesRandom (context, array) {
     'access_token': ACCESS_TOKEN,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
 
@@ -801,7 +799,7 @@ function GroupsNamesRandom (context, array) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
 
-        let name = response[index].name
+        let name = body.response[index].name
         DataSupplier.supplyDataAtIndex(dataKey, name, index)
         sendEvent('Groups', 'Random Names', null)
       })
@@ -822,8 +820,8 @@ export function onMyGroupsNamesRandom (context) {
       'access_token': ACCESS_TOKEN,
       'v': API_VERSION
     })
-      .then(response => {
-        let arr = response['items']
+      .then(body => {
+        let arr = body.response['items']
         arr = shuffle(arr)
 
         let arrRand = []
@@ -857,16 +855,16 @@ export function onBookmarksUsers (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
 
-        if (!isEmpty(response['items'][index]['user'].photo_200)) {
-          process(response['items'][index]['user'].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response['items'][index]['user'].photo_200)) {
+          process(body.response['items'][index]['user'].photo_200, dataKey, index, item)
         } else {
-          process(response['items'][index]['user'].photo_100, dataKey, index, item)
+          process(body.response['items'][index]['user'].photo_100, dataKey, index, item)
         }
 
         sendEvent('Bookmarks', 'Users', null)
@@ -888,12 +886,12 @@ export function onBookmarksUsersNames (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
-        let fullName = response['items'][index]['user'].first_name + ' ' + response['items'][index]['user'].last_name
+        let fullName = body.response['items'][index]['user'].first_name + ' ' + body.response['items'][index]['user'].last_name
         DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
         sendEvent('Bookmarks', 'Users Names', null)
       })
@@ -914,16 +912,16 @@ export function onBookmarksGroups (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
 
-        if (!isEmpty(response['items'][index]['group'].photo_200)) {
-          process(response['items'][index]['group'].photo_200, dataKey, index, item)
+        if (!isEmpty(body.response['items'][index]['group'].photo_200)) {
+          process(body.response['items'][index]['group'].photo_200, dataKey, index, item)
         } else {
-          process(response['items'][index]['group'].photo_100, dataKey, index, item)
+          process(body.response['items'][index]['group'].photo_100, dataKey, index, item)
         }
 
         sendEvent('Bookmarks', 'Groups', null)
@@ -945,12 +943,12 @@ export function onBookmarksGroupsNames (context) {
     'count': selection,
     'v': API_VERSION
   })
-    .then(response => {
+    .then(body => {
       let dataKey = context.data.key
       let items = util.toArray(context.data.items).map(sketch.fromNative)
       items.forEach((item, index) => {
         if (!item.type) item = sketch.Shape.fromNative(item.sketchObject)
-        let fullName = response['items'][index]['group'].name
+        let fullName = body.response['items'][index]['group'].name
         DataSupplier.supplyDataAtIndex(dataKey, fullName, index)
         sendEvent('Bookmarks', 'Groups Names', null)
       })
@@ -963,29 +961,34 @@ export function onBookmarksGroupsNames (context) {
 }
 
 function getData (method, options) {
+  let esc = encodeURIComponent
+	let query = Object.keys(options)
+		.map(key => esc(key) + '=' + esc(options[key]))
+		.join('&')
+
+	let url = API_URI + method + '?' + query
+
   if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
     auth()
   } else {
     return new Promise(function (resolve, reject) {
-      let esc = encodeURIComponent
-      let query = Object.keys(options)
-        .map(key => esc(key) + '=' + esc(options[key]))
-        .join('&')
-
-      let url = API_URI + method + '?' + query
       fetch(url)
-        .then(response => response.json())
-        .then(json => {
-          resolve(json.response)
-          if (DEBUG_MODE) {
-            console.log(url)
-            console.log(USER_ID)
-            console.log(ACCESS_TOKEN)
-            console.log(Settings.settingForKey('SCOPE_KEY'))
-            console.log(json.response)
-          }
-        })
-        .catch(error => resolve(error))
+      .then(response => response.json())
+      .then(body => {
+        if(DEBUG_MODE) {
+          console.log(url)
+          console.log(USER_ID)
+          console.log(ACCESS_TOKEN)
+          console.log(Settings.settingForKey('SCOPE_KEY'))
+          console.log(body.response)
+        }
+        resolve(body)
+      })
+      .catch(e => {
+        if(DEBUG_MODE) console.error(e)
+        sendEvent('Error', 'getData', e)
+        resolve(e)
+      })
     })
   }
 }
