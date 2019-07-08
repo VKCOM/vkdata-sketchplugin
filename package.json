@@ -3,7 +3,7 @@
   "author": "VK Design Team",
   "authorEmail": "design@vk.com",
   "description": "Plugin for work with the data of your page at vk.com",
-  "version": "2.3.3",
+  "version": "2.4.0",
   "engines": {
     "sketch": ">=49.0"
   },
