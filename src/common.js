@@ -103,14 +103,14 @@ function auth () {
   panel.contentView().addSubview(webView)
 }
 
-export function logout (context) {
+export function logout () {
   Settings.setSettingForKey('ACCESS_TOKEN', undefined)
   Settings.setSettingForKey('USER_ID', undefined)
   Settings.setSettingForKey('SCOPE_KEY', undefined)
   auth()
 }
 
-export function onStartup (context) {
+export function onStartup () {
   DataSupplier.registerDataSupplier('public.image', 'Your Avatar or..', 'PhotoByUserID')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Hints', 'MyFriends')
   DataSupplier.registerDataSupplier('public.image', 'Friends: Random', 'MyFriendsRandom')
@@ -141,10 +141,12 @@ export function onStartup (context) {
   sendEvent('Launch Sketch')
 }
 
-export function onShutdown (context) {
+export function onShutdown () {
   DataSupplier.deregisterDataSuppliers()
   try {
-    fs.rmdirSync(FOLDER)
+    if (fs.existsSync(FOLDER)) {
+      fs.rmdirSync(FOLDER)
+    }
   } catch (err) {
     console.error(err)
   }
@@ -1024,11 +1026,9 @@ function process (data, dataKey, index, item) {
       sendEvent('Error', 'Main', 'Process')
       return
     }
+    
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
-
-    if (item.type !== 'DataOverride') {
-      Settings.setLayerSettingForKey(item, SETTING_KEY, data)
-    }
+    if (item.type !== 'DataOverride') Settings.setLayerSettingForKey(item, SETTING_KEY, data)
 
     let downloadLocation = data
     return fetch(downloadLocation)
@@ -1041,6 +1041,7 @@ function getImageFromURL (url) {
     .then(saveTempFileFromImageData)
     .catch((err) => {
       console.error(err)
+      sendEvent('Error', 'Main', 'getImageFromURL: ' + err)
       return context.plugin.urlForResourceNamed('placeholder.png').path()
     })
 }
@@ -1048,17 +1049,19 @@ function getImageFromURL (url) {
 function saveTempFileFromImageData (imageData) {
   const guid = NSProcessInfo.processInfo().globallyUniqueString()
   const imagePath = path.join(FOLDER, `${guid}.jpg`)
+
   try {
     fs.mkdirSync(FOLDER)
   } catch (err) {
-    // probably because the folder already exists
+    if(DEBUG_MODE) console.error(err)
     sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + err)
   }
+
   try {
     fs.writeFileSync(imagePath, imageData, 'NSData')
     return imagePath
   } catch (err) {
-    console.error(err)
+    if(DEBUG_MODE) console.error(err)
     sendEvent('Error', 'Main', 'ImagePath: ' + err)
     return undefined
   }
