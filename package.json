@@ -22,7 +22,7 @@
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.7.0"
+    "@skpm/builder": "^0.7.1"
   },
   "resources": [
     "resources/**/*.js"
@@ -30,8 +30,7 @@
   "dependencies": {
     "@skpm/fs": "^0.2.5",
     "mocha-js-delegate": "^0.2.0",
-    "sketch-module-google-analytics": "^0.2.1",
-    "skpm": "^1.2.0"
+    "sketch-module-google-analytics": "^0.2.1"
   },
   "licence": "MIT",
   "repository": {
