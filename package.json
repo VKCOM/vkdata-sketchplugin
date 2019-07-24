@@ -22,7 +22,7 @@
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.7.1"
+    "@skpm/builder": "^0.7.2"
   },
   "resources": [
     "resources/**/*.js"

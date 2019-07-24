@@ -1054,7 +1054,7 @@ function saveTempFileFromImageData (imageData) {
     fs.mkdirSync(FOLDER)
   } catch (err) {
     if(DEBUG_MODE) console.error(err)
-    sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + err)
+    // sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + err)
   }
 
   try {
