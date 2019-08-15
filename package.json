@@ -1,12 +1,6 @@
 {
   "name": "VK-Data",
-  "author": "VK Design Team",
-  "authorEmail": "design@vk.com",
-  "description": "Plugin for work with the data of your page at vk.com",
   "version": "2.4.0",
-  "engines": {
-    "sketch": ">=49.0"
-  },
   "skpm": {
     "name": "VK-Data",
     "manifest": "src/manifest.json",
@@ -19,26 +13,22 @@
     "build": "skpm-build",
     "watch": "skpm-build --watch",
     "start": "skpm-build --watch --run",
-    "postinstall": "npm run build && skpm-link"
+    "postinstall": "npm run build && skpm-link",
+    "test": "skpm-test"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.7.2"
+    "@skpm/builder": "^0.7.2",
+    "@skpm/test-runner": "^0.4.0"
   },
-  "resources": [
-    "resources/**/*.js"
-  ],
   "dependencies": {
     "@skpm/fs": "^0.2.5",
     "mocha-js-delegate": "^0.2.0",
     "sketch-module-google-analytics": "^0.2.1"
   },
-  "licence": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/VKCOM/vkdata-sketchplugin.git"
-  },
+  "author": "VK Design Team",
+  "authorEmail": "design@vk.com",
+  "description": "Plugin for work with the data of your page at vk.com",
+  "repository": "https://github.com/VKCOM/vkdata-sketchplugin.git",
   "homepage": "https://github.com/VKCOM/vkdata-sketchplugin",
-  "bugs": {
-    "url": "https://github.com/VKCOM/vkdata-sketchplugin/issues"
-  }
+  "licence": "MIT"
 }

@@ -1,46 +1,28 @@
-const sketch = require('sketch')
-const util = require('util')
+const sketch = require('sketch/dom')
+const DataSupplier = require('sketch/data-supplier')
+const UI = require('sketch/ui')
+const Settings = require('sketch/settings')
+
 const os = require('os')
 const path = require('path')
+const util = require('util')
 const fs = require('@skpm/fs')
-const track = require('./analytics.js')
 const MochaJSDelegate = require('mocha-js-delegate')
-
-const {
-  DataSupplier,
-  UI,
-  Settings
-} = sketch
+const track = require('./analytics.js')
 
 const APP_ID = '6742961'
 const REDIRECT_URI = 'https://oauth.vk.com/blank.html'
 const SCOPE = 'offline,friends,groups,video'
 const API_URI = 'https://api.vk.com/method/'
 const API_VERSION = '5.101'
-const DEBUG_MODE = false
-
-const SETTING_KEY = 'vk.photo.id'
-const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
 
 const ACCESS_TOKEN = Settings.settingForKey('ACCESS_TOKEN')
 const USER_ID = Settings.settingForKey('USER_ID')
 
-export function checkauth () {
-  if (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) {
-    auth()
-  } else {
-    UI.message('You can use the plugin')
-  }
-}
+const SETTING_KEY = 'vk.photo.id'
+const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
 
-function sendEvent (category, action, value) {
-  let analytics = track('UA-130190471-1', 'event', {
-    ec: category, // the event category
-    ea: action + ' ' + value // the event action
-  }, { debug: DEBUG_MODE })
-  if (DEBUG_MODE) console.log(analytics)
-  return analytics
-}
+const DEBUG_MODE = true
 
 function auth () {
   let authURL = 'https://oauth.vk.com/authorize?client_id=' + APP_ID + '&display=page&redirect_uri=' + REDIRECT_URI + '&scope=' + SCOPE + '&response_type=token&v=' + API_VERSION + '&revoke=1'
@@ -103,6 +85,19 @@ function auth () {
   panel.contentView().addSubview(webView)
 }
 
+export function checkauth () {
+  (ACCESS_TOKEN === undefined || Settings.settingForKey('SCOPE_KEY') !== SCOPE) ? auth() : UI.message('You can use the plugin')
+}
+
+function sendEvent (category, action, value) {
+  let analytics = track('UA-130190471-1', 'event', {
+    ec: category, // the event category
+    ea: action + ' ' + value // the event action
+  }, { debug: DEBUG_MODE })
+  if (DEBUG_MODE) console.log(analytics)
+  return analytics
+}
+
 export function logout () {
   Settings.setSettingForKey('ACCESS_TOKEN', undefined)
   Settings.setSettingForKey('USER_ID', undefined)
@@ -155,23 +150,20 @@ export function onShutdown () {
 export function onPhotoByUserID (context) {
   let recentTerm = Settings.sessionVariable('recentTermPhoto')
   let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
-  if (sketch.version.sketch > 53) {
-    UI.getInputFromUser(
-      'Enter Account ID of vk.com',
-      { initialValue: ownerId },
-      (error, value) => {
-        if (error) {
-          UI.message(error)
-          sendEvent('Error', 'User Input', error)
-        } else {
-          ownerId = value.trim()
-          Settings.setSessionVariable('recentTermPhoto', ownerId)
-        }
+
+  UI.getInputFromUser(
+    'Enter Account ID of vk.com',
+    { initialValue: ownerId },
+    (error, value) => {
+      if (error) {
+        UI.message(error)
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value.trim()
+        Settings.setSessionVariable('recentTermPhoto', ownerId)
       }
-    )
-  } else {
-    UI.message('Please update your Sketch to use with plugin')
-  }
+    }
+  )
 
   let requestedCount = context.data.requestedCount
   getData('users.get', {
@@ -427,21 +419,19 @@ export function onVideoByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
   let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
-  if (sketch.version.sketch > 53) {
-    UI.getInputFromUser(
-      'Enter Video Author ID of vk.com',
-      { initialValue: ownerId },
-      (error, value) => {
-        if (error) {
-          UI.message(error)
-          sendEvent('Error', 'User Input', error)
-        } else {
-          ownerId = value
-          Settings.setSessionVariable('recentTermVideo', ownerId)
-        }
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com',
+    { initialValue: ownerId },
+    (error, value) => {
+      if (error) {
+        UI.message(error)
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+        Settings.setSessionVariable('recentTermVideo', ownerId)
       }
-    )
-  }
+    }
+  )
   getData('video.get', {
     'owner_id': ownerId,
     'count': selection,
@@ -474,23 +464,19 @@ export function onVideoTitleByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
   let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
-  if (sketch.version.sketch > 53) {
-    UI.getInputFromUser(
-      'Enter Video Author ID of vk.com',
-      { initialValue: ownerId },
-      (error, value) => {
-        if (error) {
-          UI.message(error)
-          sendEvent('Error', 'User Input', error)
-        } else {
-          ownerId = value
-          Settings.setSessionVariable('recentTermVideo', ownerId)
-        }
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com',
+    { initialValue: ownerId },
+    (error, value) => {
+      if (error) {
+        UI.message(error)
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+        Settings.setSessionVariable('recentTermVideo', ownerId)
       }
-    )
-  } else {
-    UI.message('Please update your Sketch to use with plugin')
-  }
+    }
+  )
   getData('video.get', {
     'owner_id': ownerId,
     'count': selection,
@@ -529,23 +515,19 @@ export function onVideoViewsByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
   let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
-  if (sketch.version.sketch > 53) {
-    UI.getInputFromUser(
-      'Enter Video Author ID of vk.com',
-      { initialValue: ownerId },
-      (error, value) => {
-        if (error) {
-          UI.message(error)
-          sendEvent('Error', 'User Input', error)
-        } else {
-          ownerId = value
-          Settings.setSessionVariable('recentTermVideo', ownerId)
-        }
+  UI.getInputFromUser(
+    'Enter Video Author ID of vk.com',
+    { initialValue: ownerId },
+    (error, value) => {
+      if (error) {
+        UI.message(error)
+        sendEvent('Error', 'User Input', error)
+      } else {
+        ownerId = value
+        Settings.setSessionVariable('recentTermVideo', ownerId)
       }
-    )
-  } else {
-    UI.message('Please update your Sketch to use with plugin')
-  }
+    }
+  )
   getData('video.get', {
     'owner_id': ownerId,
     'count': selection,
@@ -962,7 +944,7 @@ export function onBookmarksGroupsNames (context) {
     })
 }
 
-function getData (method, options) {
+export function getData (method, options) {
   let esc = encodeURIComponent
 	let query = Object.keys(options)
 		.map(key => esc(key) + '=' + esc(options[key]))
@@ -1028,7 +1010,9 @@ function process (data, dataKey, index, item) {
     }
     
     DataSupplier.supplyDataAtIndex(dataKey, imagePath, index)
-    if (item.type !== 'DataOverride') Settings.setLayerSettingForKey(item, SETTING_KEY, data)
+    if (item.type !== 'DataOverride') {
+      Settings.setLayerSettingForKey(item, SETTING_KEY, data)
+    }
 
     let downloadLocation = data
     return fetch(downloadLocation)
@@ -1051,18 +1035,20 @@ function saveTempFileFromImageData (imageData) {
   const imagePath = path.join(FOLDER, `${guid}.jpg`)
 
   try {
-    fs.mkdirSync(FOLDER)
-  } catch (err) {
-    if(DEBUG_MODE) console.error(err)
-    // sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + err)
+    if (!fs.existsSync(FOLDER)){
+      fs.mkdirSync(FOLDER);
+    }
+  } catch (error) {
+    if(DEBUG_MODE) console.error(error)
+    sendEvent('Error', 'Main', 'SaveTempFileFromImageData: ' + error)
   }
 
   try {
     fs.writeFileSync(imagePath, imageData, 'NSData')
     return imagePath
-  } catch (err) {
-    if(DEBUG_MODE) console.error(err)
-    sendEvent('Error', 'Main', 'ImagePath: ' + err)
+  } catch (error) {
+    if(DEBUG_MODE) console.error(error)
+    sendEvent('Error', 'Main', 'ImagePath: ' + error)
     return undefined
   }
 }

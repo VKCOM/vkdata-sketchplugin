@@ -1,6 +1,6 @@
 {
   "name": "💾 VK Data",
-  "compatibleVersion": 49,
+  "compatibleVersion": 54,
   "bundleVersion": 1,
   "icon": "./icon.png",
   "suppliesData" : true,
