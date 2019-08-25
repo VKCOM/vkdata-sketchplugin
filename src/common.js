@@ -22,7 +22,7 @@ const USER_ID = Settings.settingForKey('USER_ID')
 const SETTING_KEY = 'vk.photo.id'
 const FOLDER = path.join(os.tmpdir(), 'com.vk.data-plugin')
 
-const DEBUG_MODE = true
+const DEBUG_MODE = false
 
 function auth () {
   let authURL = 'https://oauth.vk.com/authorize?client_id=' + APP_ID + '&display=page&redirect_uri=' + REDIRECT_URI + '&scope=' + SCOPE + '&response_type=token&v=' + API_VERSION + '&revoke=1'
