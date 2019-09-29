@@ -2,6 +2,7 @@ const sketch = require('sketch/dom')
 const DataSupplier = require('sketch/data-supplier')
 const UI = require('sketch/ui')
 const Settings = require('sketch/settings')
+const Async = require('sketch/async')
 
 const os = require('os')
 const path = require('path')
@@ -29,7 +30,7 @@ function auth () {
   let panelWidth = 800
   let panelHeight = 600
 
-  let fiber = sketch.Async.createFiber()
+  let fiber = Async.createFiber()
   let frame = NSMakeRect(0, 0, panelWidth, panelHeight)
   let mask = NSTitledWindowMask + NSClosableWindowMask
   let panel = NSPanel.alloc().initWithContentRect_styleMask_backing_defer(frame, mask, NSBackingStoreBuffered, true)
@@ -94,7 +95,6 @@ function sendEvent (category, action, value) {
     ec: category, // the event category
     ea: action + ' ' + value // the event action
   }, { debug: DEBUG_MODE })
-  if (DEBUG_MODE) console.log(analytics)
   return analytics
 }
 
@@ -179,7 +179,6 @@ export function onPhotoByUserID (context) {
         if (!item.type) {
           item = sketch.Shape.fromNative(item.sketchObject)
         }
-
         if (requestedCount > body.response.length) {
           let diff = requestedCount - body.response.length
           for (let i = 0; i < diff; i++) {
@@ -964,7 +963,11 @@ export function getData (method, options) {
           console.log(USER_ID)
           console.log(ACCESS_TOKEN)
           console.log(Settings.settingForKey('SCOPE_KEY'))
-          console.log(body.response)
+          console.log(body)
+        }
+        
+        if(body.error) {
+          if(body.error.error_code === 5) logout()
         }
         resolve(body)
       })
