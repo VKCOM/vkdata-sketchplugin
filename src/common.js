@@ -968,6 +968,7 @@ export function getData (method, options) {
         
         if(body.error) {
           if(body.error.error_code === 5) logout()
+          sendEvent('Error', 'API_ERROR', body.error.error_msg)
         }
         resolve(body)
       })
