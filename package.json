@@ -1,6 +1,6 @@
 {
   "name": "VK-Data",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "skpm": {
     "name": "VK-Data",
     "manifest": "src/manifest.json",
