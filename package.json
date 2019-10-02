@@ -2,12 +2,14 @@
   "name": "VK-Data",
   "version": "2.4.4",
   "skpm": {
-    "name": "VK-Data",
     "manifest": "src/manifest.json",
     "main": "vkdata.sketchplugin",
     "assets": [
       "assets/**/*"
     ]
+  },
+  "engines": {
+    "sketch": ">=3.0"
   },
   "scripts": {
     "build": "skpm-build",
@@ -18,7 +20,7 @@
   },
   "devDependencies": {
     "@skpm/builder": "^0.7.4",
-    "@skpm/test-runner": "^0.4.0"
+    "@skpm/test-runner": "^0.4.1"
   },
   "dependencies": {
     "@skpm/fs": "^0.2.5",

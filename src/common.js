@@ -149,56 +149,57 @@ export function onShutdown () {
 
 export function onPhotoByUserID (context) {
   let recentTerm = Settings.sessionVariable('recentTermPhoto')
-  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  let ownerId = (recentTerm === undefined || recentTerm.length === 0) ? USER_ID : recentTerm
 
   UI.getInputFromUser(
     'Enter Account ID of vk.com',
     { initialValue: ownerId },
     (error, value) => {
-      if (error) {
-        UI.message(error)
-        sendEvent('Error', 'User Input', error)
+      if (error || value.length === 0) {
+        // UI.message(error)
+        // sendEvent('Error', 'User Input', error)
+        // most likely the user canceled the input
       } else {
         ownerId = value.trim()
         Settings.setSessionVariable('recentTermPhoto', ownerId)
+
+        let requestedCount = context.data.requestedCount
+        getData('users.get', {
+          'user_ids': ownerId,
+          'fields': 'photo_200,photo_100',
+          'access_token': ACCESS_TOKEN,
+          'v': API_VERSION
+        })
+          .then(body => {
+            let dataKey = context.data.key
+            let items = util.toArray(context.data.items).map(sketch.fromNative)
+            items.forEach((item, index) => {
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+              if (requestedCount > body.response.length) {
+                let diff = requestedCount - body.response.length
+                for (let i = 0; i < diff; i++) {
+                  body.response.push(body.response[i])
+                }
+              }
+              if (!isEmpty(body.response[index].photo_200)) {
+                process(body.response[index].photo_200, dataKey, index, item)
+              } else {
+                process(body.response[index].photo_100, dataKey, index, item)
+              }
+
+              sendEvent('Friends', 'By User ID', null)
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendEvent('Error', 'By User ID', error)
+          })
       }
     }
   )
-
-  let requestedCount = context.data.requestedCount
-  getData('users.get', {
-    'user_ids': ownerId,
-    'fields': 'photo_200,photo_100',
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-    .then(body => {
-      let dataKey = context.data.key
-      let items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        if (requestedCount > body.response.length) {
-          let diff = requestedCount - body.response.length
-          for (let i = 0; i < diff; i++) {
-            body.response.push(body.response[i])
-          }
-        }
-        if (!isEmpty(body.response[index].photo_200)) {
-          process(body.response[index].photo_200, dataKey, index, item)
-        } else {
-          process(body.response[index].photo_100, dataKey, index, item)
-        }
-
-        sendEvent('Friends', 'By User ID', null)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-      sendEvent('Error', 'By User ID', error)
-    })
 }
 
 export function onMyFriends (context) {
@@ -417,142 +418,148 @@ export function onMyGroupsNames (context) {
 export function onVideoByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
-  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  let ownerId = (recentTerm === undefined || recentTerm.length === 0) ? USER_ID : recentTerm
   UI.getInputFromUser(
     'Enter Video Author ID of vk.com',
     { initialValue: ownerId },
     (error, value) => {
-      if (error) {
-        UI.message(error)
-        sendEvent('Error', 'User Input', error)
+      if (error || value.length === 0) {
+        // UI.message(error)
+        // sendEvent('Error', 'User Input', error)
+        // most likely the user canceled the input
       } else {
         ownerId = value
         Settings.setSessionVariable('recentTermVideo', ownerId)
+
+        getData('video.get', {
+          'owner_id': ownerId,
+          'count': selection,
+          'access_token': ACCESS_TOKEN,
+          'v': API_VERSION
+        })
+          .then(body => {
+            let dataKey = context.data.key
+            let items = util.toArray(context.data.items).map(sketch.fromNative)
+            items.forEach((item, index) => {
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+              
+              let count = Object.keys(body.response['items'][index].image).length
+              count = count - 1
+              process(body.response['items'][index].image[count].url, dataKey, index, item)
+      
+              sendEvent('Video', 'Thumbnails', null)
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendEvent('Error', 'Video', 'Thumbnails: ' + error)
+          })
       }
     }
   )
-  getData('video.get', {
-    'owner_id': ownerId,
-    'count': selection,
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-    .then(body => {
-      let dataKey = context.data.key
-      let items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-        
-        let count = Object.keys(body.response['items'][index].image).length
-        count = count - 1
-        process(body.response['items'][index].image[count].url, dataKey, index, item)
-
-        sendEvent('Video', 'Thumbnails', null)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-      sendEvent('Error', 'Video', 'Thumbnails: ' + error)
-    })
 }
 
 export function onVideoTitleByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
-  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  let ownerId = (recentTerm === undefined || recentTerm.length === 0) ? USER_ID : recentTerm
   UI.getInputFromUser(
     'Enter Video Author ID of vk.com',
     { initialValue: ownerId },
     (error, value) => {
-      if (error) {
-        UI.message(error)
-        sendEvent('Error', 'User Input', error)
+      if (error || value.length === 0) {
+        // UI.message(error)
+        // sendEvent('Error', 'User Input', error)
+        // most likely the user canceled the input
       } else {
         ownerId = value
         Settings.setSessionVariable('recentTermVideo', ownerId)
+
+        getData('video.get', {
+          'owner_id': ownerId,
+          'count': selection,
+          'access_token': ACCESS_TOKEN,
+          'v': API_VERSION
+        })
+          .then(body => {
+            let dataKey = context.data.key
+            let items = util.toArray(context.data.items).map(sketch.fromNative)
+            items.forEach((item, index) => {
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+      
+              if (selection > body.response['items'].length) {
+                let diff = selection - body.response['items'].length
+                for (let i = 0; i < diff; i++) {
+                  body.response['items'].push(body.response['items'][i])
+                }
+              }
+      
+              let name = body.response['items'][index].title
+              DataSupplier.supplyDataAtIndex(dataKey, name, index)
+      
+              sendEvent('Video', 'Title', null)
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendEvent('Error', 'Video', 'Title: ' + error)
+          })
       }
     }
   )
-  getData('video.get', {
-    'owner_id': ownerId,
-    'count': selection,
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-    .then(body => {
-      let dataKey = context.data.key
-      let items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-
-        if (selection > body.response['items'].length) {
-          let diff = selection - body.response['items'].length
-          for (let i = 0; i < diff; i++) {
-            body.response['items'].push(body.response['items'][i])
-          }
-        }
-
-        let name = body.response['items'][index].title
-        DataSupplier.supplyDataAtIndex(dataKey, name, index)
-
-        sendEvent('Video', 'Title', null)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-      sendEvent('Error', 'Video', 'Title: ' + error)
-    })
 }
 
 export function onVideoViewsByOwnerID (context) {
   let selection = context.data.requestedCount
   let recentTerm = Settings.sessionVariable('recentTermVideo')
-  let ownerId = (recentTerm === undefined) ? USER_ID : recentTerm
+  let ownerId = (recentTerm === undefined || recentTerm.length === 0) ? USER_ID : recentTerm
   UI.getInputFromUser(
     'Enter Video Author ID of vk.com',
     { initialValue: ownerId },
     (error, value) => {
-      if (error) {
-        UI.message(error)
-        sendEvent('Error', 'User Input', error)
+      if (error || value.length === 0) {
+        // UI.message(error)
+        // sendEvent('Error', 'User Input', error)
+        // most likely the user canceled the input
       } else {
         ownerId = value
         Settings.setSessionVariable('recentTermVideo', ownerId)
+
+        getData('video.get', {
+          'owner_id': ownerId,
+          'count': selection,
+          'access_token': ACCESS_TOKEN,
+          'v': API_VERSION
+        })
+          .then(body => {
+            let dataKey = context.data.key
+            let items = util.toArray(context.data.items).map(sketch.fromNative)
+            items.forEach((item, index) => {
+              if (!item.type) {
+                item = sketch.Shape.fromNative(item.sketchObject)
+              }
+      
+              let views = body.response['items'][index].views
+              views = views + ' ' + getNoun(views, 'просмотр', 'просмотра', 'просмотров')
+              DataSupplier.supplyDataAtIndex(dataKey, views, index)
+      
+              sendEvent('Video', 'Views', null)
+            })
+          })
+          .catch(error => {
+            UI.message('Something went wrong')
+            console.error(error)
+            sendEvent('Error', 'Video', 'Video: ' + error)
+          })
       }
     }
   )
-  getData('video.get', {
-    'owner_id': ownerId,
-    'count': selection,
-    'access_token': ACCESS_TOKEN,
-    'v': API_VERSION
-  })
-    .then(body => {
-      let dataKey = context.data.key
-      let items = util.toArray(context.data.items).map(sketch.fromNative)
-      items.forEach((item, index) => {
-        if (!item.type) {
-          item = sketch.Shape.fromNative(item.sketchObject)
-        }
-
-        let views = body.response['items'][index].views
-        views = views + ' просмотров'
-        DataSupplier.supplyDataAtIndex(dataKey, views, index)
-
-        sendEvent('Video', 'Views', null)
-      })
-    })
-    .catch(error => {
-      UI.message('Something went wrong')
-      console.error(error)
-      sendEvent('Error', 'Video', 'Video: ' + error)
-    })
 }
 
 export function onMyFriendsRandom (context) {
@@ -969,6 +976,7 @@ export function getData (method, options) {
         if(body.error) {
           if(body.error.error_code === 5) logout()
           sendEvent('Error', 'API_ERROR', body.error.error_msg)
+          UI.message(body.error.error_msg)
         }
         resolve(body)
       })
@@ -1055,4 +1063,17 @@ function saveTempFileFromImageData (imageData) {
     sendEvent('Error', 'Main', 'ImagePath: ' + error)
     return undefined
   }
+}
+
+function getNoun(number, one, two, five) {
+  let n = Math.abs(number);
+  n %= 100;
+  if (n >= 5 && n <= 20) return five;
+
+  n %= 10;
+  if (n === 1) return one
+
+  if (n >= 2 && n <= 4) return two;
+
+  return five;
 }

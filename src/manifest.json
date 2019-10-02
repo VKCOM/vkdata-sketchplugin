@@ -1,6 +1,6 @@
 {
   "name": "💾 VK Data",
-  "compatibleVersion": 54,
+  "compatibleVersion": 3,
   "bundleVersion": 1,
   "icon": "./icon.png",
   "suppliesData" : true,
@@ -48,8 +48,8 @@
           "BookmarksGroupsNames": "onBookmarksGroupsNames"
         }
       },
-      "icon": "./icon64.png",
-      "iconDark": ".icon64.png"
+      "icon": "./assets/icon64.png",
+      "iconDark": "./assets/icon64.png"
     }
   ],
   "menu": {
